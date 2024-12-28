@@ -220,17 +220,23 @@ app.post("/v1/account/:id/edit-user-role", authenticate, checkPermission("canEdi
   }
 });
 
-// Get User Info
-app.get("/v1/account/:id", async (req, res) => {
+app.get("/v1/account/:id", authenticate, async (req, res) => {
   const userId = req.params.id;
-
-  // Log the user ID to check if it's correctly passed in the request
-  console.log("Looking for user with ID:", userId);
+  console.log("Looking for user with ID:", userId); // Ensure this prints the user ID to the logs
 
   try {
-    const result = await pool.query("SELECT id, nickname, username, email, role_perms, is_staff, is_suspended FROM users WHERE id = $1", [userId]);
+    const result = await pool.query(
+      "SELECT id, nickname, username, email, role_perms, is_staff, is_suspended FROM users WHERE id = $1",
+      [userId]
+    );
     const user = result.rows[0];
-    if (!user) return res.status(404).json({ error: "User not found" });
+    
+    // Log the result to ensure the query is working
+    console.log("User fetched:", user);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
 
     res.status(200).json(user);
   } catch (error) {
