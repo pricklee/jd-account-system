@@ -110,16 +110,16 @@ app.post("/v1/account/login", async (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
+    console.log("Missing username or password");
     return res.status(400).json({
       error: "Username and password required",
     });
   }
 
   try {
-    const userQuery = await pool.query(
-      "SELECT * FROM users WHERE username = $1",
-      [username]
-    );
+    console.log("Querying for user:", username);
+    const userQuery = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
+    console.log("User query result:", userQuery.rows);
 
     if (userQuery.rows.length === 0) {
       return res.status(404).json({ error: "User not found" });
@@ -258,8 +258,8 @@ app.get("/v1/account/:id", async (req, res) => {
   const userId = req.params.id;
 
   if (!validateUUID(userId)) {
+    console.log("Invalid UUID format for user ID:", userId);
     return res.status(400).json({ error: "Invalid user ID format" });
-    console.log("Validating UUID for ID:", userId);
   }
 
   try {
