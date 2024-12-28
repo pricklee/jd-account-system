@@ -37,7 +37,7 @@ const rolePermissions = {
   },
   jd_moderator: {
     canEditOwnAccount: true,
-    canEditOtherAccounts: true,
+    canEditOtherAccounts: false,
     canSuspendAccounts: true,
     canApproveMaps: true,
     canEditMaps: true,
@@ -220,6 +220,7 @@ app.post("/v1/account/:id/edit-user-role", authenticate, checkPermission("canEdi
   }
 });
 
+// Get User Info
 app.get("/v1/account/:id", authenticate, async (req, res) => {
   const userId = req.params.id;
   console.log("Looking for user with ID:", userId); // Ensure this prints the user ID to the logs
@@ -246,5 +247,5 @@ app.get("/v1/account/:id", authenticate, async (req, res) => {
 });
 
 // Start Server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
