@@ -2,6 +2,10 @@ const express = require("express");
 const { Pool } = require("pg");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const machineId = require("node-machine-id");
+const crypto = require('crypto');
+const os = require('os');
+const { execSync } = require('child_process');
 require("dotenv").config();
 
 const app = express();
@@ -111,11 +115,40 @@ const checkPermission = (requiredPermission) => {
 };
 
 const getHardwareID = async () => {
-  try { 
-    const machineId = await require('node-machine-id').machineId();
-    return machineId;
-  } catch (error) { 
-    console.error("Error getting hardware ID:", error);
+  try {
+    // Get system info
+    const networkInterfaces = os.networkInterfaces();
+    const cpuInfo = os.cpus()[0].model;
+    
+    // Get MAC address
+    const macs = Object.values(networkInterfaces)
+      .flat()
+      .filter(iface => !iface.internal && iface.mac !== '00:00:00:00:00:00')
+      .map(iface => iface.mac)
+      .join('');
+
+    // Get disk serial (Windows specific)
+    let diskSerial = '';
+    try {
+      diskSerial = execSync('wmic diskdrive get SerialNumber').toString();
+    } catch (err) {
+      console.error('Error getting disk serial:', err);
+    }
+
+    // Combine hardware identifiers
+    const hardwareString = `${macs}${cpuInfo}${diskSerial}${os.hostname()}`;
+    
+    // Create SHA-256 hash
+    const hardwareHash = crypto
+      .createHash('sha256')
+      .update(hardwareString)
+      .digest('hex');
+
+    console.log('Generated Hardware ID:', hardwareHash);
+    return hardwareHash;
+
+  } catch (error) {
+    console.error("Error generating hardware ID:", error);
     return null;
   }
 }  
@@ -194,6 +227,8 @@ app.post("/v1/account/login", async (req, res) => {
         id: user.id,
         username: user.username,
         role_perms: user.role_perms,
+        is_staff: user.is_staff,
+        hardware_id: user.hardware_id,
       },
     });
 
@@ -238,7 +273,7 @@ app.post("/v1/account/signup", async (req, res) => {
     // Insert the new user into the database
     const result = await pool.query(
       "INSERT INTO users (nickname, username, email, password) VALUES ($1, $2, $3, $4) RETURNING *",
-      [nickname, username, email, await bcrypt.hash(password, 10)]
+      [nickname, username, email, await bcrypt.hash(password, 10)] // Hash the password before storing later
     );
 
     const newUser = result.rows[0];
