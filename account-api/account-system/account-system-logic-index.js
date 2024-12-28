@@ -224,6 +224,9 @@ app.post("/v1/account/:id/edit-user-role", authenticate, checkPermission("canEdi
 app.get("/v1/account/:id", authenticate, async (req, res) => {
   const userId = req.params.id;
 
+  // Log the user ID to check if it's correctly passed in the request
+  console.log("Looking for user with ID:", userId);
+
   try {
     const result = await pool.query("SELECT id, nickname, username, email, role_perms, is_staff, is_suspended FROM users WHERE id = $1", [userId]);
     const user = result.rows[0];
