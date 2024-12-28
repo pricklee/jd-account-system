@@ -99,19 +99,19 @@ const checkPermission = (requiredPermission) => {
 function validateUUID(uuid) {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return uuidRegex.test(uuid);
-  console.error("Invalid UUID format");
+  console.log("Validating UUID for ID:", userId);
 }
 
 // Routes
 // Login endpoint - uses username/password
 app.post("/v1/account/login", async (req, res) => {
   console.log("Login attempt - Request body:", req.body);
-  
+
   const { username, password } = req.body;
 
   if (!username || !password) {
-    return res.status(400).json({ 
-      error: "Username and password required"
+    return res.status(400).json({
+      error: "Username and password required",
     });
   }
 
@@ -126,31 +126,29 @@ app.post("/v1/account/login", async (req, res) => {
     }
 
     const user = userQuery.rows[0];
-    
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ error: "Invalid password" });
     }
 
     const token = jwt.sign(
-      { 
+      {
         id: user.id,
         username: user.username,
-        role_perms: user.role_perms 
+        role_perms: user.role_perms,
       },
       process.env.JWT_SECRET,
       { expiresIn: "24h" }
     );
 
-    return res.status(200).json({ 
+    return res.status(200).json({
       token,
       user: {
         id: user.id,
         username: user.username,
-        role_perms: user.role_perms
-      }
+        role_perms: user.role_perms,
+      },
     });
-
   } catch (error) {
     console.error("Login error:", error);
     return res.status(500).json({ error: "Server error" });
@@ -261,6 +259,7 @@ app.get("/v1/account/:id", async (req, res) => {
 
   if (!validateUUID(userId)) {
     return res.status(400).json({ error: "Invalid user ID format" });
+    console.log("Validating UUID for ID:", userId);
   }
 
   try {
