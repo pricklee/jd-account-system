@@ -105,18 +105,17 @@ function validateUUID(uuid) {
 // Routes
 // Login endpoint - uses username/password
 app.post("/v1/account/login", async (req, res) => {
-  try {
-    const { username, password } = req.body;
-
-    // Validate required fields
-    if (!username || !password) {
-      console.error("Logine failed: Missing required fields");
-      return res.status(400).json({ error: "Username and password are required" });
-    }
+  console.log("Login attempt - Request body:", req.body);
   
-    console.log(`User ${username} is has logged in`);
+  const { username, password } = req.body;
 
-    // Query user by username
+  if (!username || !password) {
+    return res.status(400).json({ 
+      error: "Username and password required"
+    });
+  }
+
+  try {
     const userQuery = await pool.query(
       "SELECT * FROM users WHERE username = $1",
       [username]
@@ -128,13 +127,11 @@ app.post("/v1/account/login", async (req, res) => {
 
     const user = userQuery.rows[0];
     
-    // Verify password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ error: "Invalid password" });
     }
 
-    // Generate token
     const token = jwt.sign(
       { 
         id: user.id,
