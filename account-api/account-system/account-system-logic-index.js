@@ -127,6 +127,7 @@ app.post("/v1/account/signup", async (req, res) => {
 
   // Check if all required fields are provided
   if (!nickname || !username || !email || !password) {
+    logger.error(`Sign-up failed: Missing required fields. Request body: ${JSON.stringify(req.body)}`)
     return res.status(400).json({ error: "All fields are required" });
   }
 
