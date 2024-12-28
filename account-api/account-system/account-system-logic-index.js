@@ -95,6 +95,11 @@ const checkPermission = (requiredPermission) => {
   };
 };
 
+function validateUUID(uuid) {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(uuid);
+}
+
 // Routes
 // Login endpoint
 app.post("/v1/account/login", async (req, res) => {
@@ -167,7 +172,6 @@ app.post("/v1/account/signup", async (req, res) => {
     }
 
     // Validate UUID format for username
-
     if (!validateUUID(username)) {
       console.error(`Invalid UUID format for username: ${username}`);
       return res.status(400).json({ error: "Invalid UUID format for username" });
@@ -178,11 +182,6 @@ app.post("/v1/account/signup", async (req, res) => {
       "INSERT INTO users (nickname, username, email, password) VALUES ($1, $2, $3, $4) RETURNING *",
       [nickname, username, email, await bcrypt.hash(password, 10)]
     );
-
-   function validateUUID(uuid) {
-    const uuidReget = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    return uuidRegex.test(uuid);
-   }
 
     const newUser = result.rows[0];
     res.status(201).json({ message: "Account created" });
