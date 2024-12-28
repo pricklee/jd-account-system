@@ -96,26 +96,44 @@ const checkPermission = (requiredPermission) => {
 };
 
 // Routes
-// Login
+// Login endpoint
 app.post("/v1/account/login", async (req, res) => {
   const { username, password } = req.body;
 
+  // Check if username and password are provided
+  if (!username || !password) {
+    return res.status(400).json({ error: "Username and password are required" });
+  }
+
   try {
+    // Step 1: Fetch user from database based on username
     const result = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
     const user = result.rows[0];
-    if (!user) return res.status(404).json({ error: "User not found" });
 
+    // Step 2: Check if user exists
+    if (!user) {
+      console.error(`User with username ${username} not found`);
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Step 3: Compare the password with the stored hash
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ error: "Invalid credentials" });
+    if (!isMatch) {
+      console.error(`Invalid credentials for username: ${username}`);
+      return res.status(400).json({ error: "Invalid credentials" });
+    }
 
+    // Step 4: Generate JWT token
     const token = jwt.sign(
-      { id: user.id, role_perms: user.role_perms },
+      { id: user.id, username: user.username, role_perms: user.role_perms },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
 
+    // Step 5: Return the token to the client
     res.status(200).json({ token });
   } catch (error) {
+    // Log detailed error on server side
     console.error("Error during login:", error);
     res.status(500).json({ error: "Server error" });
   }
