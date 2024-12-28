@@ -125,6 +125,11 @@ app.post("/v1/account/login", async (req, res) => {
 app.post("/v1/account/signup", async (req, res) => {
   const { nickname, username, email, password } = req.body;
 
+  // Check if all required fields are provided
+  if (!nickname || !username || !email || !password) {
+    return res.status(400).json({ error: "All fields are required" });
+  }
+
   try {
     // Check if the username or email already exists
     const existingUser = await pool.query(
@@ -136,8 +141,10 @@ app.post("/v1/account/signup", async (req, res) => {
       return res.status(400).json({ error: "Username or email already exists" });
     }
 
+    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Insert the new user into the database
     await pool.query(
       "INSERT INTO users (nickname, username, email, password) VALUES ($1, $2, $3, $4)",
       [nickname, username, email, hashedPassword]
