@@ -70,6 +70,9 @@ const authenticate = (req, res, next) => {
     next();
   } catch (error) {
     console.error("JWT verification failed:", error);
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: "Token expired" });
+    }
     res.status(403).json({ error: "Invalid token" });
   }
 };
@@ -80,7 +83,11 @@ const checkPermission = (requiredPermission) => {
     const userRole = req.user.role_perms;
     const permissions = rolePermissions[userRole];
 
-    if (permissions && permissions[requiredPermission]) {
+    if (!permissions) {
+      return res.status(403).json({ error: "Role permissions not found" });
+    }
+
+    if (permissions[requiredPermission]) {
       return next();
     }
     console.log(`User ${req.user.username} does not have permission for ${requiredPermission}`);
@@ -194,6 +201,10 @@ app.post("/v1/account/:id/edit-user-role", authenticate, checkPermission("canEdi
   const { role_perms } = req.body;
 
   try {
+    if (!rolePermissions[role_perms]) {
+      return res.status(400).json({ error: "Invalid role permissions" });
+    }
+
     await pool.query("UPDATE users SET role_perms = $1 WHERE id = $2", [role_perms, userId]);
     res.status(200).json({ message: "Role updated successfully" });
   } catch (error) {
