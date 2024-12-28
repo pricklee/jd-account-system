@@ -172,6 +172,12 @@ app.post("/v1/account/signup", async (req, res) => {
       [email, username]
     );
 
+  const MAX_USERNAME_LENGTH = 20;
+  if (username.length > MAX_USERNAME_LENGTH) {
+    console.error(`Sign-up failed: Username exceeds maximum length: ${username}`);
+    return res.status(400).json({ error: `Username must be ${MAX_USERNAME_LENGTH} characters or less`});
+  }
+
     if (existingUser.rows.length > 0) {
       return res.status(400).json({ error: "Username or email already exists" });
     }
