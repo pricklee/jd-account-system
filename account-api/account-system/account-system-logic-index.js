@@ -102,52 +102,46 @@ function validateUUID(uuid) {
 }
 
 // Routes
-// Login endpoint
+// Login endpoint - uses username/password
 app.post("/v1/account/login", async (req, res) => {
   const { username, password } = req.body;
 
-// Validation input
-if (!username || !password) {
-  console.error(`Login failed: Missing required fields. Request body: ${JSON.stringify(req.body)}`);
-  return res.status(400).json({ error: "Username and password are required" });
-}
-
-console.log("Recieved Login Request:", { username });
-
-try {
-  // Fetch user info from the database
-  const result = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
-
-  if (result.rows.length === 0) {
-    return res.status(404).json({ error: "User not found" });
+  if (!username || !password) {
+    return res.status(400).json({ error: "Username and password are required" });
   }
 
-  const user = result.rows[0];
+  try {
+    const result = await pool.query(
+      "SELECT * FROM users WHERE username = $1",
+      [username]
+    );
 
-// Verify password
-const isMatch = await bcrypt.compare(password, user.password);
-if (!isMatch) {
-  console.error(`Invalid password for username: ${username}`);
-  return res.status(400).json({ error: "Invalid password" });
-}
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
 
-// Generate JWT token
-const token = jwt.sign(
-    { id: user.id, username: user.username, role_perms: user.role_perms },
-    process.env.JWT_SECRET,
-    { expiresIn: "24h" }
-  );
+    const user = result.rows[0];
+    const isMatch = await bcrypt.compare(password, user.password);
 
-console.log("Token generated for user:", username);
+    if (!isMatch) {
+      return res.status(400).json({ error: "Invalid password" });
+    }
 
-// Return the token
-res.status(200).json({ token });
-} catch (error) {
-  console.error("Error during login:", {
-    message: error.message,
-    stack: error.stack,
-  });
-  res.status(500).json({ error: "Server error, please try again later" });
+    const token = jwt.sign(
+      { 
+        id: user.id,
+        username: user.username,
+        role_perms: user.role_perms 
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "24h" }
+    );
+
+    res.status(200).json({ token });
+
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
@@ -249,15 +243,12 @@ app.post("/v1/account/:id/edit-user-role", authenticate, checkPermission("canEdi
   }
 });
 
-// Get User Info
+// Get user info endpoint - uses UUID
 app.get("/v1/account/:id", async (req, res) => {
   const userId = req.params.id;
-  console.log("Looking for user with ID:", userId); // Ensure this prints the user ID to the logs
 
-// Validate UUID
-if (!validateUUID(userId)) {
-  console.error(`Invalid UUID format: ${userId}`);
-  return res.status(400).json({ error: "That is a invalid user ID" });
+  if (!validateUUID(userId)) {
+    return res.status(400).json({ error: "Invalid user ID format" });
   }
 
   try {
@@ -265,18 +256,15 @@ if (!validateUUID(userId)) {
       "SELECT id, nickname, username, role_perms, is_staff, is_suspended FROM users WHERE id = $1",
       [userId]
     );
-    const user = result.rows[0];
-    
-    // Log the result to ensure the query is working
-    console.log("User fetched:", user);
 
-    if (!user) {
+    if (!result.rows[0]) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    res.status(200).json(user);
+    res.status(200).json(result.rows[0]);
+
   } catch (error) {
-    console.error("Error fetching user info:", error);
+    console.error("Error fetching user:", error);
     res.status(500).json({ error: "Server error" });
   }
 });
