@@ -10,10 +10,10 @@ app.use(express.json());
 // Postgres Connection Pool
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
-});
+    ssl: {
+      rejectUnauthorized: false,
+    },
+  });
 
 // Role Permissions Configuration
 const rolePermissions = {
@@ -100,43 +100,53 @@ const checkPermission = (requiredPermission) => {
 app.post("/v1/account/login", async (req, res) => {
   const { username, password } = req.body;
 
-  // Check if username and password are provided
-  if (!username || !password) {
-    return res.status(400).json({ error: "Username and password are required" });
+// Validation input
+if (!username || !password) {
+  console.error("Validation error: Missing username or password");
+  return res.status(400).json({ error: "Username and password are required" });
   }
 
-  try {
-    // Step 1: Fetch user from database based on username
-    const result = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
-    const user = result.rows[0];
+console.log("Recieved Login Request:", { username });
 
-    // Step 2: Check if user exists
-    if (!user) {
-      console.error(`User with username ${username} not found`);
-      return res.status(404).json({ error: "User not found" });
-    }
+try { 
+  const query = "SELECT * FROM users WHERE username = $1::TEST";
+  console.log("Executing query:", query, "with value:", username);
+    
+  const result = await pool.query(query, [username]);
+  console.log("Query result:", result.rows);
 
-    // Step 3: Compare the password with the stored hash
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      console.error(`Invalid credentials for username: ${username}`);
-      return res.status(400).json({ error: "Invalid credentials" });
-    }
-
-    // Step 4: Generate JWT token
-    const token = jwt.sign(
-      { id: user.id, username: user.username, role_perms: user.role_perms },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
-    );
-
-    // Step 5: Return the token to the client
-    res.status(200).json({ token });
-  } catch (error) {
-    // Log detailed error on server side
-    console.error("Error during login:", error);
-    res.status(500).json({ error: "Server error" });
+  if (result.rows.length === 0) {
+    console.error(`User not found: ${username}`);
+    return res.status(404).json({ error: "User not found" });
   }
+} catch (error) {
+  console.error("Error during login:", {
+    message: error.message,
+    stats: error.stack,
+  });
+  res.status(500).json({ error: "Server error, please try again" });
+}
+
+const user = result.rows[0];
+
+// Verify password
+const isMatch = await bcrypt.compare(password, user.password);
+if (!isMatch) {
+  console.error(`Invalid password for username: ${username}`);
+  return res.status(400).json({ error: "Invalid password" });
+}
+
+// Generate JWT token
+const token = jwt.sign(
+  { id: user.id, username: user.username, role_perms: user.role_perms },
+  process.env.JWT_SECRET,
+  { expiresIn: "24h" }
+);
+
+console.log("Token generated for user:", username);
+
+// Return the token
+res.status(200).json({ token });
 });
 
 // Signup
