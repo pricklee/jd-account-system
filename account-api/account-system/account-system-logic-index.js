@@ -99,34 +99,42 @@ const checkPermission = (requiredPermission) => {
 function validateUUID(uuid) {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return uuidRegex.test(uuid);
+  console.error("Invalid UUID format");
 }
 
 // Routes
 // Login endpoint - uses username/password
 app.post("/v1/account/login", async (req, res) => {
-  const { username, password } = req.body;
-
-  if (!username || !password) {
-    return res.status(400).json({ error: "Username and password are required" });
-  }
-
   try {
-    const result = await pool.query(
+    const { username, password } = req.body;
+
+    // Validate required fields
+    if (!username || !password) {
+      console.error("Logine failed: Missing required fields");
+      return res.status(400).json({ error: "Username and password are required" });
+    }
+  
+    console.log(`User ${username} is has logged in`);
+
+    // Query user by username
+    const userQuery = await pool.query(
       "SELECT * FROM users WHERE username = $1",
       [username]
     );
 
-    if (result.rows.length === 0) {
+    if (userQuery.rows.length === 0) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const user = result.rows[0];
+    const user = userQuery.rows[0];
+    
+    // Verify password
     const isMatch = await bcrypt.compare(password, user.password);
-
     if (!isMatch) {
       return res.status(400).json({ error: "Invalid password" });
     }
 
+    // Generate token
     const token = jwt.sign(
       { 
         id: user.id,
@@ -137,11 +145,18 @@ app.post("/v1/account/login", async (req, res) => {
       { expiresIn: "24h" }
     );
 
-    res.status(200).json({ token });
+    return res.status(200).json({ 
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        role_perms: user.role_perms
+      }
+    });
 
   } catch (error) {
     console.error("Login error:", error);
-    res.status(500).json({ error: "Server error" });
+    return res.status(500).json({ error: "Server error" });
   }
 });
 
