@@ -95,6 +95,7 @@ const checkPermission = (requiredPermission) => {
   };
 };
 
+// Validate UUID format
 function validateUUID(uuid) {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return uuidRegex.test(uuid);
@@ -169,12 +170,6 @@ app.post("/v1/account/signup", async (req, res) => {
 
     if (existingUser.rows.length > 0) {
       return res.status(400).json({ error: "Username or email already exists" });
-    }
-
-    // Validate UUID format for username
-    if (!validateUUID(username)) {
-      console.error(`Invalid UUID format for username: ${username}`);
-      return res.status(400).json({ error: "Invalid UUID format for username" });
     }
 
     // Insert the new user into the database
@@ -258,6 +253,12 @@ app.post("/v1/account/:id/edit-user-role", authenticate, checkPermission("canEdi
 app.get("/v1/account/:id", async (req, res) => {
   const userId = req.params.id;
   console.log("Looking for user with ID:", userId); // Ensure this prints the user ID to the logs
+
+// Validate UUID
+if (!validateUUID(userId)) {
+  console.error(`Invalid UUID format: ${userId}`);
+  return res.status(400).json({ error: "That is a invalid user ID" });
+}
 
   try {
     const result = await pool.query(
