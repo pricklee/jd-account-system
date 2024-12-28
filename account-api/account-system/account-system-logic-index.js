@@ -101,7 +101,7 @@ app.post("/v1/account/login", async (req, res) => {
   const { username, password } = req.body;
 
   try {
-    const result = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+    const result = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
     const user = result.rows[0];
     if (!user) return res.status(404).json({ error: "User not found" });
 
