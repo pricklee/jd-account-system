@@ -56,11 +56,26 @@ const rolePermissions = {
 };
 
 // Middleware: Authenticate User
-const authenticate = (req, res, next) => {
+const authenticate = async (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
   if (!token) {
     console.log("Authorization token missing");
     return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  try {
+    const banCheck = await pool.query(
+      "SELECT * FROM hardware_bans WHERE hardware_id = $1",
+      [hardware_id]
+    );
+
+    if (banCheck.rows.length > 0) {
+      console.log("Blocked login attempt from banned hardware:", hardware_id);
+      return res.status(403).json({ error: "This account has been banned" });
+    }
+  } catch (error) {
+    console.error("Error checking hardware bans:", error);
+    return res.status(500).json({ error: "Server error" });
   }
 
   try {
@@ -118,6 +133,7 @@ app.post("/v1/account/login", async (req, res) => {
   console.log("Login attempt - Request body:", req.body);
 
   const { username, password } = req.body;
+  let hardware_id;
 
   if (!username || !password ) {
     console.log("Missing username or password");
@@ -127,7 +143,7 @@ app.post("/v1/account/login", async (req, res) => {
   }
 
   try {
-    const hardware_id = await getHardwareID();
+    hardware_id = await getHardwareID();
     console.log("Hardware ID:", hardware_id);
     if (!hardware_id) {
       return res.status(400).json({ error: "Hardware ID could not be found" });
@@ -137,31 +153,30 @@ app.post("/v1/account/login", async (req, res) => {
     return res.status(500).json({ error: "Server Error" });
   }
 
+  try {
   const banCheck = await pool.query(
     "SELECT * FROM hardware_bans WHERE hardware_id = $1",
     [hardware_id]
-  );
+  )
 
   if (banCheck.rows.length > 0) {
       console.log("Blocked login attempt from banned hardware:", hardware_id);
       return res.status(403).json({ error: "This account has been banned" });
   }
 
-
-  try {
     console.log("Querying for user:", username);
     const userQuery = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
     console.log("User query result:", userQuery.rows);
 
-    if (userQuery.rows.length === 0) {
+ if (userQuery.rows.length === 0) {
       return res.status(404).json({ error: "User not found" });
     }
 
     const user = userQuery.rows[0];
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
+  if (!isMatch) {
       return res.status(400).json({ error: "Invalid password" });
-    }
+    };
 
     const token = jwt.sign(
       {
@@ -185,7 +200,7 @@ app.post("/v1/account/login", async (req, res) => {
 await pool.query(
   "UPDATE users SET hardware_id = $1 WHERE id = $2",
   [hardware_id, username]
-)
+);
 
   } catch (error) {
     console.error("Login error:", error);
