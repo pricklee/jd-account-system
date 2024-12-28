@@ -95,6 +95,16 @@ const checkPermission = (requiredPermission) => {
   };
 };
 
+const getHardwareID = async () => {
+  try { 
+    const machineId = await require('node-machine-id').machineId();
+    return machineId;
+  } catch (error) { 
+    console.error("Error getting hardware ID:", error);
+    return null;
+  }
+}  
+
 // Validate UUID format
 function validateUUID(uuid) {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -109,12 +119,34 @@ app.post("/v1/account/login", async (req, res) => {
 
   const { username, password } = req.body;
 
-  if (!username || !password) {
+  if (!username || !password ) {
     console.log("Missing username or password");
     return res.status(400).json({
       error: "Username and password required",
     });
   }
+
+  try {
+    const hardware_id = await getHardwareID();
+    console.log("Hardware ID:", hardware_id);
+    if (!hardware_id) {
+      return res.status(400).json({ error: "Hardware ID could not be found" });
+    }
+  } catch (error) {
+    console.error("Error getting hardware ID:", error);
+    return res.status(500).json({ error: "Server Error" });
+  }
+
+  const banCheck = await pool.query(
+    "SELECT * FROM hardware_bans WHERE hardware_id = $1",
+    [hardware_id]
+  );
+
+  if (banCheck.rows.length > 0) {
+      console.log("Blocked login attempt from banned hardware:", hardware_id);
+      return res.status(403).json({ error: "This account has been banned" });
+  }
+
 
   try {
     console.log("Querying for user:", username);
@@ -149,6 +181,12 @@ app.post("/v1/account/login", async (req, res) => {
         role_perms: user.role_perms,
       },
     });
+
+await pool.query(
+  "UPDATE users SET hardware_id = $1 WHERE id = $2",
+  [hardware_id, username]
+)
+
   } catch (error) {
     console.error("Login error:", error);
     return res.status(500).json({ error: "Server error" });
@@ -205,9 +243,30 @@ app.post("/v1/account/:id/suspend", authenticate, checkPermission("canSuspendAcc
   const { action } = req.body;
 
   try {
+    const user = await pool.query(
+      "SELECT hardware_id FROM users WHERE id = $1",
+      [userId]
+    );
+
+    if (!user.rows[0]) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    await pool.query(
+      "INSERT INTO hardware_bans (hardware_id, reason) VALUES ($1, $2)",
+      [user.rows[0].hardware_id, reason]
+    );
+
+    await pool.query(
+      "UPDATE users SET is_suspended = true WHERE id = $1",
+      [userId]
+    )
+
+    console.log(`user ${userId} has been suspended`);
+    res.status(200).json({ message: `User ${userId} has been suspended` });
     const isSuspended = action === "suspend";
     await pool.query("UPDATE users SET is_suspended = $1 WHERE id = $2", [isSuspended, userId]);
-
+  
     res.status(200).json({ message: `User ${action}ed successfully` });
   } catch (error) {
     console.error("Error during suspend/unsuspend:", error);
