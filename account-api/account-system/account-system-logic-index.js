@@ -102,32 +102,21 @@ app.post("/v1/account/login", async (req, res) => {
 
 // Validation input
 if (!username || !password) {
-  console.error("Validation error: Missing username or password");
+  console.error(`Login failed: Missing required fields. Request body: ${JSON.stringify(req.body)}`);
   return res.status(400).json({ error: "Username and password are required" });
   }
 
 console.log("Recieved Login Request:", { username });
 
-try { 
-  const query = "SELECT * FROM users WHERE username = $1::TEST";
-  console.log("Executing query:", query, "with value:", username);
-    
-  const result = await pool.query(query, [username]);
-  console.log("Query result:", result.rows);
+try {
+  // Fetch user info from the database
+  const result = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
 
   if (result.rows.length === 0) {
-    console.error(`User not found: ${username}`);
     return res.status(404).json({ error: "User not found" });
   }
-} catch (error) {
-  console.error("Error during login:", {
-    message: error.message,
-    stats: error.stack,
-  });
-  res.status(500).json({ error: "Server error, please try again" });
-}
 
-const user = result.rows[0];
+  const user = result.rows[0];
 
 // Verify password
 const isMatch = await bcrypt.compare(password, user.password);
@@ -147,6 +136,13 @@ console.log("Token generated for user:", username);
 
 // Return the token
 res.status(200).json({ token });
+} catch (error) {
+  console.error("Error during login:", {
+    message: error.message,
+    stack: error.stack,
+  });
+  res.status(500).json({ error: "Server error, please try again later" });
+}
 });
 
 // Signup
@@ -155,7 +151,7 @@ app.post("/v1/account/signup", async (req, res) => {
 
   // Check if all required fields are provided
   if (!nickname || !username || !email || !password) {
-    logger.error(`Sign-up failed: Missing required fields. Request body: ${JSON.stringify(req.body)}`)
+    console.error(`Sign-up failed: Missing required fields. Request body: ${JSON.stringify(req.body)}`)
     return res.status(400).json({ error: "All fields are required" });
   }
 
@@ -170,15 +166,25 @@ app.post("/v1/account/signup", async (req, res) => {
       return res.status(400).json({ error: "Username or email already exists" });
     }
 
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Validate UUID format for username
+
+    if (!validateUUID(username)) {
+      console.error(`Invalid UUID format for username: ${username}`);
+      return res.status(400).json({ error: "Invalid UUID format for username" });
+    }
 
     // Insert the new user into the database
-    await pool.query(
-      "INSERT INTO users (nickname, username, email, password) VALUES ($1, $2, $3, $4)",
-      [nickname, username, email, hashedPassword]
+    const result = await pool.query(
+      "INSERT INTO users (nickname, username, email, password) VALUES ($1, $2, $3, $4) RETURNING *",
+      [nickname, username, email, await bcrypt.hash(password, 10)]
     );
 
+   function validateUUID(uuid) {
+    const uuidReget = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(uuid);
+   }
+
+    const newUser = result.rows[0];
     res.status(201).json({ message: "Account created" });
   } catch (error) {
     console.error("Error during signup:", error);
