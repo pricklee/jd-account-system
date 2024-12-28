@@ -1,0 +1,39 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "account-api/account-system/account-system-logic-index.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/v1/account/login",
+      "dest": "account-api/account-system/account-system-logic-index.js"
+    },
+    {
+      "src": "/v1/account/signup",
+      "dest": "account-api/account-system/account-system-logic-index.js"
+    },
+    {
+      "src": "/v1/account/reset-password",
+      "dest": "account-api/account-system/account-system-logic-index.js"
+    },
+    {
+      "src": "/v1/account/:id/suspend",
+      "dest": "account-api/account-system/account-system-logic-index.js"
+    },
+    {
+      "src": "/v1/account/:id/edit-user",
+      "dest": "account-api/account-system/account-system-logic-index.js"
+    },
+    {
+      "src": "/v1/account/:id/edit-user-role",
+      "dest": "account-api/account-system/account-system-logic-index.js"
+    },
+    {
+      "src": "/v1/account/:id",
+      "dest": "account-api/account-system/account-system-logic-index.js"
+    }
+  ]
+}
