@@ -221,7 +221,7 @@ app.post("/v1/account/:id/edit-user-role", authenticate, checkPermission("canEdi
 });
 
 // Get User Info
-app.get("/v1/account/:id", authenticate, async (req, res) => {
+app.get("/v1/account/:id", async (req, res) => {
   const userId = req.params.id;
   console.log("Looking for user with ID:", userId); // Ensure this prints the user ID to the logs
 
