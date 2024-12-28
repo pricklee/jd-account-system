@@ -110,7 +110,7 @@ app.post("/v1/account/login", async (req, res) => {
 if (!username || !password) {
   console.error(`Login failed: Missing required fields. Request body: ${JSON.stringify(req.body)}`);
   return res.status(400).json({ error: "Username and password are required" });
-  }
+}
 
 console.log("Recieved Login Request:", { username });
 
@@ -133,10 +133,10 @@ if (!isMatch) {
 
 // Generate JWT token
 const token = jwt.sign(
-  { id: user.id, username: user.username, role_perms: user.role_perms },
-  process.env.JWT_SECRET,
-  { expiresIn: "24h" }
-);
+    { id: user.id, username: user.username, role_perms: user.role_perms },
+    process.env.JWT_SECRET,
+    { expiresIn: "24h" }
+  );
 
 console.log("Token generated for user:", username);
 
@@ -148,7 +148,7 @@ res.status(200).json({ token });
     stack: error.stack,
   });
   res.status(500).json({ error: "Server error, please try again later" });
-}
+  }
 });
 
 // Signup
@@ -258,7 +258,7 @@ app.get("/v1/account/:id", async (req, res) => {
 if (!validateUUID(userId)) {
   console.error(`Invalid UUID format: ${userId}`);
   return res.status(400).json({ error: "That is a invalid user ID" });
-}
+  }
 
   try {
     const result = await pool.query(
