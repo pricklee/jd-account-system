@@ -227,7 +227,7 @@ app.get("/v1/account/:id", async (req, res) => {
 
   try {
     const result = await pool.query(
-      "SELECT id, nickname, username, email, role_perms, is_staff, is_suspended FROM users WHERE id = $1",
+      "SELECT id, nickname, username, role_perms, is_staff, is_suspended FROM users WHERE id = $1",
       [userId]
     );
     const user = result.rows[0];
