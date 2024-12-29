@@ -34,6 +34,55 @@
     {
       "src": "/v1/account/(?<id>[a-fA-F0-9-]{36})/edit-user-role",
       "dest": "account-api/account-system/account-system-logic-index.js"
+    },
+    {
+      "src": "/v1/preview/account/login",
+      "dest": "account-api/account-system/account-system-logic-index.js",
+      "headers": {
+        "x-env": "preview"
+      }
+    },
+    {
+      "src": "/v1/preview/account/signup",
+      "dest": "account-api/account-system/account-system-logic-index.js",
+      "headers": {
+        "x-env": "preview"
+      }
+    },
+    {
+      "src": "/v1/preview/account/reset-password",
+      "dest": "account-api/account-system/account-system-logic-index.js",
+      "headers": {
+        "x-env": "preview"
+      }
+    },
+    {
+      "src": "/v1/preview/account/(?<id>[a-fA-F0-9-]{36})",
+      "dest": "account-api/account-system/account-system-logic-index.js",
+      "headers": {
+        "x-env": "preview"
+      }
+    },
+    {
+      "src": "/v1/preview/account/(?<id>[a-fA-F0-9-]{36})/suspend",
+      "dest": "account-api/account-system/account-system-logic-index.js",
+      "headers": {
+        "x-env": "preview"
+      }
+    },
+    {
+      "src": "/v1/preview/account/(?<id>[a-fA-F0-9-]{36})/edit-user",
+      "dest": "account-api/account-system/account-system-logic-index.js",
+      "headers": {
+        "x-env": "preview"
+      }
+    },
+    {
+      "src": "/v1/preview/account/(?<id>[a-fA-F0-9-]{36})/edit-user-role",
+      "dest": "account-api/account-system/account-system-logic-index.js",
+      "headers": {
+        "x-env": "preview"
+      }
     }
   ]
 }
