@@ -129,11 +129,16 @@ const getHardwareID = async () => {
 
     // Get disk serial (Windows specific)
     let diskSerial = '';
-    try {
-      diskSerial = execSync('wmic diskdrive get SerialNumber').toString();
-    } catch (err) {
-      console.error('Error getting disk serial:', err);
-    }
+    if (os.platform === 'win32') {
+      try {
+        diskSerial = execSync('wmic diskdrive get SerialNumber').toString().trim();
+        } catch (err) {
+          console.error('Error getting disk serial:', err);
+        }
+      } else {
+        diskSerial = execSync('cat /sys/class/dmi/id/product_uuid').toString().trim();
+      }
+  
 
     // Combine hardware identifiers
     const hardwareString = `${macs}${cpuInfo}${diskSerial}${os.hostname()}`;
