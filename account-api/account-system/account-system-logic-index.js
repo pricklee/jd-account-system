@@ -207,6 +207,7 @@ const getHardwareID = async () => {
       }
     }
 
+    // Fallback to OS-provided info if hardware info is incomplete
     if (!macs) macs = Object.values(os.networkInterfaces()).flat().map(i => i.mac).join('');
     if (!cpuInfo) cpuInfo = os.cpus()[0].model;
     if (!diskSerial) diskSerial = os.hostname();
@@ -304,6 +305,13 @@ app.post("/v1/account/login", async (req, res) => {
       "UPDATE users SET last_login_ip = $1 WHERE id = $2",
       [req.clientIp, user.id]
     );
+
+    await pool.query(
+      "UPDATE users SET last_login_ip = $1, hardware_id = $2 WHERE id = $3",
+      [req.clientIp, hardware_id, user.id]
+    );
+
+    console.log(`User logged in from IP: ${req.clientIp} with Hardware ID: ${hardware_id}`);
 
     console.log(`User logged in from the IP: ${req.clientIp}`);
 
