@@ -19,6 +19,13 @@ const pool = new Pool({
     },
   });
 
+  const bannedWords = ["nigger", "ass", "nigga", "niga", "nig", "niger", "fuck", "fag", "fagget", "boob", "dick", "bastard", "faggot", "retard", "penis", "slut", "tit", "tits", "fucker", "nazi", "isis", "sex", "rape", "porn", "pornhub", "xnxx", "xvideos", "xhamsters", "pussy", "vagina", "r34", "rule34", "genocide", "trany", "tranny", "tranni", "trani", "f@g", "r@pe", "b00b", "misticalkai", "pricklety", "jammerdash", "automoderator", "hizuru_chan", "hizuru", "n-word", "k-word", "kike", "chink", "ch1nk", "ch!nk", "dyke", "shemale", "she-male", "shemale", "she-male", "p0rn", "porno", "p0rno", "anus", "genitals", "cock", "cocks", "c0ck", "c0cks"]
+
+  const containsProfanity = (text) => {
+    const lowerCaseText = text.toLowerCase();
+    return bannedWords.com((word) => lowerCaseText.includes(word));
+  };
+
 // Role Permissions Configuration
 const rolePermissions = {
   jd_super_admin: {
@@ -297,17 +304,6 @@ await pool.query(
 app.post("/v1/account/signup", async (req, res) => {
   const { nickname, username, email, password } = req.body;
 
-  let Filter;
-  try {
-    const module = await import('bad-words');
-    Filter = module.default;
-  } catch (error) {
-    console.error("Error importing bad-words module:", error);
-    return res.status(500).json({ error: "Server error" });
-  }
-
-  const filter = new Filter();
-
   // Check if all required fields are provided
   if (!nickname || !username || !email || !password) {
     console.error(`Sign-up failed: Missing required fields. Request body: ${JSON.stringify(req.body)}`);
@@ -321,9 +317,9 @@ app.post("/v1/account/signup", async (req, res) => {
     return res.status(400).json({ error: "Username must only contain lowercase letters, numbers, and underscores, spaces are not allowed" });
   }
 
-  if (filter.isProfane(username) || filter.isProfane(nickname)) {
-    console.error(`Sign-up failed: Profanity is detected in username or nickname: ${username}, ${nickname}`);
-    return res.status(400).json({ error: "Username or nickname contains profanity" });
+  if (containsProfanity(username) || containsProfanity(nickname)) {
+    console.error(`Sign-up failed: Username or nickname contains a banned word: ${username}, ${nickname}`);
+    return res.status(400).json({ error: "Username or nickname contains a banned word" });
   }
 
   try {
