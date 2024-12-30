@@ -228,10 +228,16 @@ app.post("/v1/account/login", async (req, res) => {
     }
 
     const user = userQuery.rows[0];
-    const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) {
+    let hashedPassword = password;
+
+    if (password.length !== 64) {
+      hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
+    }
+
+    const isMatch = await bcrypt.compare(hashedPassword, user.password);
+    if (!isMatch) {
       return res.status(400).json({ error: "Invalid password" });
-    };
+    }
 
     if (user.is_suspended) {
       console.log("Login attempt from a suspended account:", username);
@@ -304,10 +310,18 @@ app.post("/v1/account/signup", async (req, res) => {
       return res.status(400).json({ error: "Username or email already exists" });
     }
 
+    let hashedPassword = password;
+    if (password.length !== 64) {
+      hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const bcryptHashedPassword = await bcrypt.hash(password, salt);
+
     // Insert the new user into the database
     const result = await pool.query(
       "INSERT INTO users (nickname, username, email, password) VALUES ($1, $2, $3, $4) RETURNING *",
-      [nickname, username, email, await bcrypt.hash(password, 10)] // Hash the password before storing later
+      [nickname, username, email, bcryptHashedPassword]
     );
 
     const newUser = result.rows[0];
