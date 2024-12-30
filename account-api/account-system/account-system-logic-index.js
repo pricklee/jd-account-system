@@ -107,21 +107,6 @@ const authenticate = async (req, res, next) => {
   }
 
   try {
-    const banCheck = await pool.query(
-      "SELECT * FROM hardware_bans WHERE hardware_id = $1",
-      [hardware_id]
-    );
-
-    if (banCheck.rows.length > 0) {
-      console.log("Blocked login attempt from banned hardware:", hardware_id);
-      return res.status(403).json({ error: "This account has been banned" });
-    }
-  } catch (error) {
-    console.error("Error checking hardware bans:", error);
-    return res.status(500).json({ error: "Server error" });
-  }
-
-  try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
     console.log("Authenticated user:", req.user);
@@ -165,64 +150,6 @@ const checkPermission = (requiredPermission) => {
   };
 };
 
-const getHardwareID = async () => {
-  try {
-    let macs = '';
-    let cpuInfo = '';
-    let diskSerial = '';
-
-    if (process.platform === 'win32') {
-      try {
-        macs = execSync('getmac').toString();
-        cpuInfo = execSync('wmic cpu get ProcessorId').toString();
-        diskSerial = execSync('wmic diskdrive get SerialNumber').toString();
-      } catch (error) {
-        console.error("Error getting Windows hardware info:", error);
-      }
-    } else if (process.platform === 'linux') {
-      try {
-        // Try multiple Linux hardware identifiers
-        const commands = [
-          'cat /sys/class/net/*/address',
-          'cat /proc/cpuinfo',
-          'cat /sys/class/dmi/id/product_uuid',
-          'cat /sys/class/dmi/id/board_serial',
-          'dmidecode -s system-uuid'
-        ];
-
-        for (const cmd of commands) {
-          try {
-            const output = execSync(cmd).toString();
-            if (output) {
-              if (cmd.includes('address')) macs += output;
-              else if (cmd.includes('cpuinfo')) cpuInfo += output;
-              else diskSerial += output;
-            }
-          } catch (cmdError) {
-            console.error(`Error executing ${cmd}:`, cmdError);
-          }
-        }
-      } catch (error) {
-        console.error("Error getting Linux hardware info:", error);
-      }
-    }
-
-    // Fallback to OS-provided info if hardware info is incomplete
-    if (!macs) macs = Object.values(os.networkInterfaces()).flat().map(i => i.mac).join('');
-    if (!cpuInfo) cpuInfo = os.cpus()[0].model;
-    if (!diskSerial) diskSerial = os.hostname();
-
-    const hardwareString = `${macs}${cpuInfo}${diskSerial}${os.hostname()}`;
-    const hardwareHash = crypto.createHash('sha256').update(hardwareString).digest('hex');
-
-    console.log('Generated Hardware ID:', hardwareHash);
-    return hardwareHash;
-  } catch (error) {
-    console.error("Error generating hardware ID:", error);
-    return null;
-  }
-};
-
 // Validate UUID format
 function validateUUID(uuid) {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -245,30 +172,6 @@ app.post("/v1/account/login", async (req, res) => {
   }
 
   try {
-    hardware_id = await getHardwareID();
-    console.log("Hardware ID:", hardware_id);
-    if (!hardware_id) {
-      return res.status(400).json({ error: "Hardware ID could not be found" });
-    }
-
-    const banCheck = await pool.query(
-      "SELECT * FROM hardware_bans WHERE hardware_id = $1",
-      [hardware_id]
-    );
-
-    if (banCheck.rows.length > 0) {
-      console.log("Blocked login attempt from banned hardware:", hardware_id);
-      return res.status(403).json({ error: "This hardware has been banned" });
-    }
-
-    console.log("Querying for user:", username);
-    const userQuery = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
-    console.log("User query result:", userQuery.rows);
-
-    if (userQuery.rows.length === 0) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
     const user = userQuery.rows[0];
     let hashedPassword = password;
 
@@ -305,8 +208,6 @@ app.post("/v1/account/login", async (req, res) => {
       "UPDATE users SET last_login_ip = $1 WHERE id = $2",
       [req.clientIp, user.id]
     );
-
-    console.log(`User logged in from IP: ${req.clientIp} with Hardware ID: ${hardware_id}`);
 
     console.log(`User logged in from the IP: ${req.clientIp}`);
 
