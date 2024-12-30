@@ -299,12 +299,14 @@ app.post("/v1/account/signup", async (req, res) => {
 
   let Filter;
   try {
-    const { default: Filter } = await import('bad-words');
+    const module = await import('bad-words');
     Filter = module.default;
   } catch (error) {
     console.error("Error importing bad-words module:", error);
     return res.status(500).json({ error: "Server error" });
   }
+  
+  const filter = new Filter();
 
   // Check if all required fields are provided
   if (!nickname || !username || !email || !password) {
@@ -319,7 +321,7 @@ app.post("/v1/account/signup", async (req, res) => {
     return res.status(400).json({ error: "Username must only contain lowercase letters, numbers, and underscores, spaces are not allowed" });
   }
 
-  if (Filter.isProfane(username) || Filter.isProfane(nickname)) {
+  if (filter.isProfane(username) || filter.isProfane(nickname)) {
     console.error(`Sign-up failed: Profanity is detected in username or nickname: ${username}, ${nickname}`);
     return res.status(400).json({ error: "Username or nickname contains profanity" });
   }
