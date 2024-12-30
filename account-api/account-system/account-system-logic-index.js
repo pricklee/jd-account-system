@@ -299,7 +299,7 @@ app.post("/v1/account/signup", async (req, res) => {
 
   let Filter;
   try {
-    const module = await import('bad-words');
+    const { default: Filter } = await import('bad-words');
     Filter = module.default;
   } catch (error) {
     console.error("Error importing bad-words module:", error);
