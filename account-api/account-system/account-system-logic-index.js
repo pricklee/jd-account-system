@@ -250,27 +250,22 @@ app.post("/v1/account/login", async (req, res) => {
     if (!hardware_id) {
       return res.status(400).json({ error: "Hardware ID could not be found" });
     }
-  } catch (error) {
-    console.error("Error getting hardware ID:", error);
-    return res.status(500).json({ error: "Server Error" });
-  }
 
-  try {
-  const banCheck = await pool.query(
-    "SELECT * FROM hardware_bans WHERE hardware_id = $1",
-    [hardware_id]
-  )
+    const banCheck = await pool.query(
+      "SELECT * FROM hardware_bans WHERE hardware_id = $1",
+      [hardware_id]
+    );
 
-  if (banCheck.rows.length > 0) {
+    if (banCheck.rows.length > 0) {
       console.log("Blocked login attempt from banned hardware:", hardware_id);
       return res.status(403).json({ error: "This hardware has been banned" });
-  }
+    }
 
     console.log("Querying for user:", username);
     const userQuery = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
     console.log("User query result:", userQuery.rows);
 
- if (userQuery.rows.length === 0) {
+    if (userQuery.rows.length === 0) {
       return res.status(404).json({ error: "User not found" });
     }
 
@@ -291,6 +286,11 @@ app.post("/v1/account/login", async (req, res) => {
       return res.status(403).json({ error: "This account has been suspended, you may not login" });
     }
 
+    await pool.query(
+      "UPDATE users SET hardware_id = $1, last_login_ip = $2 WHERE id = $3",
+      [hardware_id, req.clientIp, user.id]
+    );
+
     const token = jwt.sign(
       {
         id: user.id,
@@ -304,11 +304,6 @@ app.post("/v1/account/login", async (req, res) => {
     await pool.query(
       "UPDATE users SET last_login_ip = $1 WHERE id = $2",
       [req.clientIp, user.id]
-    );
-
-    await pool.query(
-      "UPDATE users SET last_login_ip = $1, hardware_id = $2 WHERE id = $3",
-      [req.clientIp, hardware_id, user.id]
     );
 
     console.log(`User logged in from IP: ${req.clientIp} with Hardware ID: ${hardware_id}`);
