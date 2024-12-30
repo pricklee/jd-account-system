@@ -6,7 +6,6 @@ const machineId = require("node-machine-id");
 const crypto = require('crypto');
 const os = require('os');
 const { execSync } = require('child_process');
-const Filter = require('bad-words');
 require("dotenv").config();
 
 const app = express();
@@ -298,6 +297,7 @@ await pool.query(
 // Signup
 app.post("/v1/account/signup", async (req, res) => {
   const { nickname, username, email, password } = req.body;
+  const { default: Filter } = await import('bad-words');
   const filter = new Filter();
 
   // Check if all required fields are provided
