@@ -233,6 +233,11 @@ app.post("/v1/account/login", async (req, res) => {
       return res.status(400).json({ error: "Invalid password" });
     };
 
+    if (user.is_suspended) {
+      console.log("Login attempt from a suspended account:", username);
+      return res.status(403).json({ error: "This account has been suspended, you may not login" });
+    }
+
     const token = jwt.sign(
       {
         id: user.id,
