@@ -11,6 +11,12 @@ require("dotenv").config();
 const app = express();
 app.use(express.json());
 
+// IP logging
+app,use((req, res, next) => {
+  req.clientIp = req.headers['x-forwared-for'] || req.connection.remoteAddress;
+  next();
+});
+
 // Postgres Connection Pool
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -285,6 +291,13 @@ app.post("/v1/account/login", async (req, res) => {
       { expiresIn: "24h" }
     );
 
+    await pool.query(
+      "UPDATE users SET last_login_ip = $1 WHERE id = $2",
+      [req.clientIp, user.id]
+    );
+
+    console.log(`User logged in from the IP: ${req.clientIp}`);
+
     return res.status(200).json({
       token,
       user: {
@@ -295,17 +308,15 @@ app.post("/v1/account/login", async (req, res) => {
         hardware_id: user.hardware_id,
       },
     });
-
-await pool.query(
-  "UPDATE users SET hardware_id = $1 WHERE id = $2",
-  [hardware_id, username]
-);
-
   } catch (error) {
     console.error("Login error:", error);
     return res.status(500).json({ error: "Server error" });
   }
 });
+await pool.query(
+  "UPDATE users SET hardware_id = $1 WHERE id = $2",
+  [hardware_id, username]
+);
 
 // Signup
 app.post("/v1/account/signup", async (req, res) => {
@@ -361,11 +372,13 @@ app.post("/v1/account/signup", async (req, res) => {
 
     // Insert the new user into the database
     const result = await pool.query(
-      "INSERT INTO users (nickname, username, email, password) VALUES ($1, $2, $3, $4) RETURNING *",
+      "INSERT INTO users (nickname, username, email, password, signup_ip) VALUES ($1, $2, $3, $4, $5) RETURNING *",
       [nickname, username, email, bcryptHashedPassword]
     );
 
     const newUser = result.rows[0];
+    console.log(`New signup from IP: ${req.clientIp}`);
+
     res.status(201).json({ message: "Account created" });
   } catch (error) {
     console.error("Error during signup:", error);
