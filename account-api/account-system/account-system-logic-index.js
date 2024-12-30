@@ -197,7 +197,6 @@ const getHardwareID = async () => {
 function validateUUID(uuid) {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return uuidRegex.test(uuid);
-  console.log("Validating UUID for ID:", userId);
 }
 
 // Routes
@@ -301,7 +300,7 @@ app.post("/v1/account/signup", async (req, res) => {
   let Filter;
   try {
     const module = await import('bad-words');
-    filter = module.default;
+    Filter = module.default;
   } catch (error) {
     console.error("Error importing bad-words module:", error);
     return res.status(500).json({ error: "Server error" });
@@ -320,7 +319,7 @@ app.post("/v1/account/signup", async (req, res) => {
     return res.status(400).json({ error: "Username must only contain lowercase letters, numbers, and underscores, spaces are not allowed" });
   }
 
-  if (filter.isProfane(username) || filter.isProfane(nickname)) {
+  if (Filter.isProfane(username) || Filter.isProfane(nickname)) {
     console.error(`Sign-up failed: Profanity is detected in username or nickname: ${username}, ${nickname}`);
     return res.status(400).json({ error: "Username or nickname contains profanity" });
   }
