@@ -5,7 +5,6 @@ const jwt = require("jsonwebtoken");
 const crypto = require('crypto');
 const os = require('os');
 const { execSync } = require('child_process');
-const fetch = require('node-fetch')
 require("dotenv").config();
 
 const app = express();
@@ -162,7 +161,7 @@ app.post("/v1/account/login", async (req, res) => {
 
   const { username, password } = req.body;
 
-  if (!username || !password ) {
+  if (!username || !password) {
     console.log("Missing username or password");
     return res.status(400).json({
       error: "Username and password required",
@@ -170,6 +169,12 @@ app.post("/v1/account/login", async (req, res) => {
   }
 
   try {
+    const userQuery = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
+
+    if (userQuery.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
     const user = userQuery.rows[0];
     let hashedPassword = password;
 
@@ -183,8 +188,7 @@ app.post("/v1/account/login", async (req, res) => {
     }
 
     if (user.is_suspended) {
-      console.log("Login attempt from a suspended account:", username);
-      return res.status(403).json({ error: "This account has been suspended, you may not login" });
+      return res.status(403).json({ error: "This account has been suspended" });
     }
 
     const token = jwt.sign(
@@ -197,12 +201,13 @@ app.post("/v1/account/login", async (req, res) => {
       { expiresIn: "24h" }
     );
 
+    // Update last login IP
     await pool.query(
       "UPDATE users SET last_login_ip = $1 WHERE id = $2",
       [req.clientIp, user.id]
     );
 
-    console.log(`User logged in from the IP: ${req.clientIp}`);
+    console.log(`User logged in from IP: ${req.clientIp}`);
 
     return res.status(200).json({
       token,
@@ -210,7 +215,7 @@ app.post("/v1/account/login", async (req, res) => {
         id: user.id,
         username: user.username,
         role_perms: user.role_perms,
-        is_staff: user.is_staff,
+        is_staff: user.is_staff
       },
     });
   } catch (error) {
