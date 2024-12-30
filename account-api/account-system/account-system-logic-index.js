@@ -6,6 +6,7 @@ const machineId = require("node-machine-id");
 const crypto = require('crypto');
 const os = require('os');
 const { execSync } = require('child_process');
+const Filter = require('bad-words');
 require("dotenv").config();
 
 const app = express();
@@ -46,6 +47,24 @@ const rolePermissions = {
     canApproveMaps: true,
     canEditMaps: true,
     canEditRoles: false,
+    canAccessAdminDashboard: false,
+  },
+  bot: {
+    canEditOwnAccount: true,
+    canEditOtherAccounts: true,
+    canSuspendAccounts: true,
+    canEditRoles: true,
+    canApproveMaps: true,
+    canEditMaps: true,
+    canAccessAdminDashboard: true,
+  },
+  supporter: {
+    canEditOwnAccount: true,
+    canEditOtherAccounts: false,
+    canSuspendAccounts: false,
+    canEditRoles: false,
+    canApproveMaps: false,
+    canEditMaps: false,
     canAccessAdminDashboard: false,
   },
   player: {
@@ -279,6 +298,7 @@ await pool.query(
 // Signup
 app.post("/v1/account/signup", async (req, res) => {
   const { nickname, username, email, password } = req.body;
+  const filter = new Filter();
 
   // Check if all required fields are provided
   if (!nickname || !username || !email || !password) {
@@ -291,6 +311,11 @@ app.post("/v1/account/signup", async (req, res) => {
   if (!usernameRegex.test(username)) {
     console.error(`Sign-up failed: Account username must only contain lowercase letters, numbers, and underscores: ${username}`);
     return res.status(400).json({ error: "Username must only contain lowercase letters, numbers, and underscores, spaces are not allowed" });
+  }
+
+  if (filter.isProfane(username) || filter.isProfane(nickname)) {
+    console.error(`Sign-up failed: Profanity is detected in username or nickname: ${username}, ${nickname}`);
+    return res.status(400).json({ error: "Username or nickname contains profanity" });
   }
 
   try {
