@@ -275,6 +275,13 @@ app.post("/v1/account/signup", async (req, res) => {
     return res.status(400).json({ error: "All fields are required" });
   }
 
+  // Validates username format
+  const usernameRegex = /^[a-z0-9_]+$/;
+  if (!usernameRegex.test(username)) {
+    console.error(`Sign-up failed: Your username must only contain lowercase letters, numbers, and underscores: ${username}`);
+    return res.status(400).json({ error: "Username must only contain lowercase letters, numbers, and underscores, spaces are not allowed" });
+  }
+
   try {
     // Check if the username or email already exists
     const existingUser = await pool.query(
