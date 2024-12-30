@@ -139,16 +139,22 @@ const getHardwareID = async () => {
       .map(iface => iface.mac)
       .join('');
 
-    // Get disk serial (Windows specific)
+    // Get disk serial (Windows & Linux specific)
     let diskSerial = '';
     if (process.platform === 'win32') {
       try {
         diskSerial = execSync('wmic diskdrive get SerialNumber').toString().trim();
       } catch (err) {
-        console.error('Error getting disk serial:', err);
+        console.error('Error getting disk serial for your Windows device:', err);
+      }
+    } else if (process.platform === 'linux') {
+      try {
+        diskSerial = execSync('cat /sys/class/dmi/id/product_uuid').toString().trim();
+      } catch (err) {
+        console.error('Error getting disk serial for your Linux device:', err);
       }
     } else {
-      diskSerial = execSync('cat /sys/class/dmi/id/product_uuid').toString().trim();
+      console.error('Unsupported platform:', process.platform);
     }
 
     // Combine hardware identifiers
