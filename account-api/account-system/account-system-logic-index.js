@@ -2,7 +2,6 @@ const express = require("express");
 const { Pool } = require("pg");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const machineId = require("node-machine-id");
 const crypto = require('crypto');
 const os = require('os');
 const { execSync } = require('child_process');
@@ -162,7 +161,6 @@ app.post("/v1/account/login", async (req, res) => {
   console.log("Login attempt - Request body:", req.body);
 
   const { username, password } = req.body;
-  let hardware_id;
 
   if (!username || !password ) {
     console.log("Missing username or password");
@@ -189,11 +187,6 @@ app.post("/v1/account/login", async (req, res) => {
       return res.status(403).json({ error: "This account has been suspended, you may not login" });
     }
 
-    await pool.query(
-      "UPDATE users SET hardware_id = $1, last_login_ip = $2 WHERE id = $3",
-      [hardware_id, req.clientIp, user.id]
-    );
-
     const token = jwt.sign(
       {
         id: user.id,
@@ -218,7 +211,6 @@ app.post("/v1/account/login", async (req, res) => {
         username: user.username,
         role_perms: user.role_perms,
         is_staff: user.is_staff,
-        hardware_id: user.hardware_id,
       },
     });
   } catch (error) {
@@ -226,10 +218,6 @@ app.post("/v1/account/login", async (req, res) => {
     return res.status(500).json({ error: "Server error" });
   }
 });
-await pool.query(
-  "UPDATE users SET hardware_id = $1 WHERE id = $2",
-  [hardware_id, username]
-);
 
 // Signup
 app.post("/v1/account/signup", async (req, res) => {
@@ -330,27 +318,6 @@ app.post("/v1/account/:id/suspend", authenticate, checkPermission("canSuspendAcc
   const { action } = req.body;
 
   try {
-    const user = await pool.query(
-      "SELECT hardware_id FROM users WHERE id = $1",
-      [userId]
-    );
-
-    if (!user.rows[0]) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    await pool.query(
-      "INSERT INTO hardware_bans (hardware_id, reason) VALUES ($1, $2)",
-      [user.rows[0].hardware_id, reason]
-    );
-
-    await pool.query(
-      "UPDATE users SET is_suspended = true WHERE id = $1",
-      [userId]
-    )
-
-    console.log(`user ${userId} has been suspended`);
-    res.status(200).json({ message: `User ${userId} has been suspended` });
     const isSuspended = action === "suspend";
     await pool.query("UPDATE users SET is_suspended = $1 WHERE id = $2", [isSuspended, userId]);
   
