@@ -1,5 +1,4 @@
 {
-  "type": "module",
   "dependencies": {
     "bad-words": "^4.0.0",
     "bcryptjs": "^2.4.3",
