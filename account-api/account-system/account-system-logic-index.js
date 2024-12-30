@@ -297,8 +297,15 @@ await pool.query(
 // Signup
 app.post("/v1/account/signup", async (req, res) => {
   const { nickname, username, email, password } = req.body;
-  const { default: Filter } = await import('bad-words');
-  const filter = new Filter();
+
+  let Filter;
+  try {
+    const module = await import('bad-words');
+    filter = module.default;
+  } catch (error) {
+    console.error("Error importing bad-words module:", error);
+    return res.status(500).json({ error: "Server error" });
+  }
 
   // Check if all required fields are provided
   if (!nickname || !username || !email || !password) {
