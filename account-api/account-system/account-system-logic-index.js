@@ -216,7 +216,7 @@ app.post("/v1/account/login", async (req, res) => {
 
   if (banCheck.rows.length > 0) {
       console.log("Blocked login attempt from banned hardware:", hardware_id);
-      return res.status(403).json({ error: "This account has been banned" });
+      return res.status(403).json({ error: "This hardware has been banned" });
   }
 
     console.log("Querying for user:", username);
@@ -283,7 +283,7 @@ app.post("/v1/account/signup", async (req, res) => {
   // Validates username format
   const usernameRegex = /^[a-z0-9_]+$/;
   if (!usernameRegex.test(username)) {
-    console.error(`Sign-up failed: Your username must only contain lowercase letters, numbers, and underscores: ${username}`);
+    console.error(`Sign-up failed: Account username must only contain lowercase letters, numbers, and underscores: ${username}`);
     return res.status(400).json({ error: "Username must only contain lowercase letters, numbers, and underscores, spaces are not allowed" });
   }
 
@@ -361,25 +361,45 @@ app.post("/v1/account/:id/suspend", authenticate, checkPermission("canSuspendAcc
 // Edit User
 app.post("/v1/account/:id/edit-user", authenticate, async (req, res) => {
   const userId = req.params.id;
-  const updates = req.body;
+  const { nickname, username, email } = req.body;
+
+  if (!nickname || !username || !email) {
+    console.error("Editing ${username} failed: Missing required fields.");
+    return res.status(400).json({ error: "Nickname, Username, and Email are required for edit" });
+  }
+
+  const canEditOwnAccount = rolePermissions[req.user.role_perms]?.canEditOwnAccount;
+  const canEditOtherAccounts = rolePermissions[req.user.role_perms]?.canEditOtherAccounts;
+
+  if (req.user.id !== userId && !canEditOtherAccounts) {
+    console.error(`User ${req.user.username} does not have permission to edit another account`);
+    return res.status(403).json({ error: "Access denied" });
+  }
+
+  if (req.user.id === userId && !canEditOwnAccount) {
+    console.error(`User ${req.user.username} does not have permission to edit their own account`);
+    return res.status(403).json({ error: "Access denied" });
+  }
 
   try {
-    const user = await pool.query("SELECT * FROM users WHERE id = $1", [userId]);
-    if (!user.rows.length) return res.status(404).json({ error: "User not found" });
+    const existingUser = await pool.query(
+      "SELECT * FROM user WHERE (email = $1 OR username = $2) AND id != $3",
+      [email, username, userId]
+    );
 
-    if (req.user.id !== userId && !rolePermissions[req.user.role_perms].canEditOtherAccounts) {
-      return res.status(403).json({ error: "Access denied" });
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({ error: "Username or email already exists" });
     }
 
-    const fields = Object.keys(updates).map((key, i) => `${key} = $${i + 1}`).join(", ");
-    const values = Object.values(updates);
-    values.push(userId);
+    await pool.query(
+      "UPDATE users SET nickname = $1, username = $2, email = $3 WHERE id = $4",
+      [nickname, username, email, userId]
+    );
 
-    await pool.query(`UPDATE users SET ${fields} WHERE id = $${values.length}`, values);
-
+    console.log(`User ${userId} updated there account info successfully`);
     res.status(200).json({ message: "User updated successfully" });
   } catch (error) {
-    console.error("Error during edit user:", error);
+    console.error("Error updating user:", error);
     res.status(500).json({ error: "Server error" });
   }
 });
@@ -425,6 +445,26 @@ app.get("/v1/account/:id", async (req, res) => {
 
   } catch (error) {
     console.error("Error fetching user:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Get user stats enpoint - uses UUID
+app.get("/v1/account/:id/stats", async (req, res) => {
+  try {
+    // Logic coming soon
+  } catch (error) {
+    console.error("Error fetching user stats:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Edit user stats enpoint - uses UUID - only for the game to edit stats
+app.get("/v1/account/:id/stats/edit-stats", async (req, res) => {
+  try {
+    // Logic coming soon
+  } catch (error) {
+    console.error("Error editing user stats:", error);
     res.status(500).json({ error: "Server error" });
   }
 });
