@@ -6,6 +6,7 @@ const machineId = require("node-machine-id");
 const crypto = require('crypto');
 const os = require('os');
 const { execSync } = require('child_process');
+const fetch = require('node-fetch')
 require("dotenv").config();
 
 const app = express();
@@ -166,47 +167,55 @@ const checkPermission = (requiredPermission) => {
 
 const getHardwareID = async () => {
   try {
-    // Get system info
-    const networkInterfaces = os.networkInterfaces();
-    const cpuInfo = os.cpus()[0].model;
-    
-    // Get MAC address
-    const macs = Object.values(networkInterfaces)
-      .flat()
-      .filter(iface => !iface.internal && iface.mac !== '00:00:00:00:00:00')
-      .map(iface => iface.mac)
-      .join('');
-
-    // Get disk serial (Windows & Linux specific)
+    let macs = '';
+    let cpuInfo = '';
     let diskSerial = '';
+
     if (process.platform === 'win32') {
       try {
-        diskSerial = execSync('wmic diskdrive get SerialNumber').toString().trim();
-      } catch (err) {
-        console.error('Error getting disk serial for your Windows device:', err);
+        macs = execSync('getmac').toString();
+        cpuInfo = execSync('wmic cpu get ProcessorId').toString();
+        diskSerial = execSync('wmic diskdrive get SerialNumber').toString();
+      } catch (error) {
+        console.error("Error getting Windows hardware info:", error);
       }
     } else if (process.platform === 'linux') {
       try {
-        diskSerial = execSync('cat /sys/class/dmi/id/product_uuid').toString().trim();
-      } catch (err) {
-        console.error('Error getting disk serial for your Linux device:', err);
+        // Try multiple Linux hardware identifiers
+        const commands = [
+          'cat /sys/class/net/*/address',
+          'cat /proc/cpuinfo',
+          'cat /sys/class/dmi/id/product_uuid',
+          'cat /sys/class/dmi/id/board_serial',
+          'dmidecode -s system-uuid'
+        ];
+
+        for (const cmd of commands) {
+          try {
+            const output = execSync(cmd).toString();
+            if (output) {
+              if (cmd.includes('address')) macs += output;
+              else if (cmd.includes('cpuinfo')) cpuInfo += output;
+              else diskSerial += output;
+            }
+          } catch (cmdError) {
+            console.error(`Error executing ${cmd}:`, cmdError);
+          }
+        }
+      } catch (error) {
+        console.error("Error getting Linux hardware info:", error);
       }
-    } else {
-      console.error('Unsupported platform:', process.platform);
     }
 
-    // Combine hardware identifiers
+    if (!macs) macs = Object.values(os.networkInterfaces()).flat().map(i => i.mac).join('');
+    if (!cpuInfo) cpuInfo = os.cpus()[0].model;
+    if (!diskSerial) diskSerial = os.hostname();
+
     const hardwareString = `${macs}${cpuInfo}${diskSerial}${os.hostname()}`;
-    
-    // Create SHA-256 hash
-    const hardwareHash = crypto
-      .createHash('sha256')
-      .update(hardwareString)
-      .digest('hex');
+    const hardwareHash = crypto.createHash('sha256').update(hardwareString).digest('hex');
 
     console.log('Generated Hardware ID:', hardwareHash);
     return hardwareHash;
-
   } catch (error) {
     console.error("Error generating hardware ID:", error);
     return null;
@@ -385,6 +394,28 @@ app.post("/v1/account/signup", async (req, res) => {
     if (error.code === '23505') {  // Unique violation error code in Postgres
       return res.status(400).json({ error: "Username or email already exists" });
     }
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// UUID list endpoint
+app.get("/v1/account/uuid", async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT id, username FROM users ORDER BY username ASC"
+    );
+    
+    const users = result.rows.map(row => ({
+      uuid: row.id,
+      username: row.username
+    }));
+    
+    res.status(200).json({ 
+      total: users.length,
+      users: users 
+    });
+  } catch (error) {
+    console.error("Error fetching UUIDs:", error);
     res.status(500).json({ error: "Server error" });
   }
 });
