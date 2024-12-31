@@ -277,9 +277,9 @@ app.post("/v1/account/signup", async (req, res) => {
     const bcryptHashedPassword = await bcrypt.hash(password, salt);
 
     // Insert the new user into the database
-    const newUser = await pool.query(
+    const result = await pool.query(
       "INSERT INTO users (nickname, username, email, password, signup_ip) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-      [nickname, username, email, bcryptHashedPassword]
+      [nickname, username, email, bcryptHashedPassword, req.clientIp]
     );
 
     console.log(`New signup from IP: ${req.clientIp}`);
@@ -298,7 +298,7 @@ app.post("/v1/account/signup", async (req, res) => {
 app.get("/v1/account/uuid", async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT id, username FROM users ORDER BY username ASC"
+      "SELECT id, username, nickname, role_perms, is_staff, is_suspended FROM users ORDER BY username ASC"
     );
     
     const users = result.rows.map(row => ({
