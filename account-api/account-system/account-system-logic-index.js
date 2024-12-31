@@ -277,12 +277,11 @@ app.post("/v1/account/signup", async (req, res) => {
     const bcryptHashedPassword = await bcrypt.hash(password, salt);
 
     // Insert the new user into the database
-    const result = await pool.query(
+    const newUser = await pool.query(
       "INSERT INTO users (nickname, username, email, password, signup_ip) VALUES ($1, $2, $3, $4, $5) RETURNING *",
       [nickname, username, email, bcryptHashedPassword]
     );
 
-    const newUser = result.rows[0];
     console.log(`New signup from IP: ${req.clientIp}`);
 
     res.status(201).json({ message: "Account created" });
@@ -304,7 +303,11 @@ app.get("/v1/account/uuid", async (req, res) => {
     
     const users = result.rows.map(row => ({
       uuid: row.id,
-      username: row.username
+      display_name: row.nickname,
+      username: row.username,
+      role: row.role_perms,
+      staff: row.is_staff,
+      suspended: row.is_suspended
     }));
     
     res.status(200).json({ 
