@@ -20,7 +20,7 @@
       "dest": "account-api/account-system/account-system-logic-index.js"
     },
     {
-      "src": "/v1/account/uuid",
+      "src": "/v1/account/users",
       "dest": "account-api/account-system/account-system-logic-index.js"
     },
     {
