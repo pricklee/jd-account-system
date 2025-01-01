@@ -12,17 +12,41 @@ const app = express();
 app.use(express.json());
 
 // IP logging
-app.use((req, res, next) => {
-  req.clientIp = 
-  req.headers['cf-connecting-ip'] ||
-  req.headers['x-real-ip'] ||
-  req.headers['x-client-ip'] ||
-  req.headers['x-forwarded-for']?.split(',')[0] ||
-  req.socket.remoteAddress?.replace(/^.*:/, '') ||
-  req.connection.remoteAddress ||
-  'unknown';
-  console.log(`Client IP:`, req.clientIp);
-  next();
+app.use(async (req, res, next) => {
+  try {
+    // Get IP from icanhazip.com
+    const response = await axios.get('https://ipv4.icanhazip.com', { 
+      timeout: 5000,
+      headers: {
+        'User-Agent': req.headers['user-agent'] || 'Node.js'
+      }
+    });
+    
+    req.clientIp = response.data.trim() || (
+      req.headers['cf-connecting-ip'] ||
+      req.headers['x-real-ip'] ||
+      req.headers['x-client-ip'] ||
+      req.headers['x-forwarded-for']?.split(',')[0] ||
+      req.socket.remoteAddress?.replace(/^.*:/, '') ||
+      req.connection.remoteAddress ||
+      'unknown'
+    );
+
+    console.log('Client IP:', req.clientIp);
+    next();
+  } catch (error) {
+    console.error('IP lookup failed:', error.message);
+    // Fallback to normal IP detection
+    req.clientIp = 
+      req.headers['cf-connecting-ip'] ||
+      req.headers['x-real-ip'] ||
+      req.headers['x-client-ip'] ||
+      req.headers['x-forwarded-for']?.split(',')[0] ||
+      req.socket.remoteAddress?.replace(/^.*:/, '') ||
+      req.connection.remoteAddress ||
+      'unknown';
+    next();
+  }
 });
 
 // Postgres Connection Pool
