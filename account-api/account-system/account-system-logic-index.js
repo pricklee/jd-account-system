@@ -159,7 +159,7 @@ const DAILY_LIMIT= 2 // 2 accounts per day
 const rateLimitSignup = async (req, res, next) => {
   const ip = req.clientIp;
   const currentTime = Date.now();
-  const today = new Date().toISOString().spit('T')[0];
+  const today = new Date().toISOString().split('T')[0];
 
   try {
     const dailyCountKey = `${ip}:${today}`;
