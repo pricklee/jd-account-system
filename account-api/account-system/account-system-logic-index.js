@@ -13,7 +13,15 @@ app.use(express.json());
 
 // IP logging
 app.use((req, res, next) => {
-  req.clientIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+  req.clientIp = 
+  req.headers['cf-connecting-ip'] ||
+  req.headers['x-real-ip'] ||
+  req.headers['x-client-ip'] ||
+  req.headers['x-forwarded-for']?.split(',')[0] ||
+  req.socket.remoteAddress?.replace(/^.*:/, '') ||
+  req.connection.remoteAddress ||
+  'unknown';
+  console.log(`Client IP:`, req.clientIp);
   next();
 });
 
@@ -41,6 +49,24 @@ const pool = new Pool({
 
 // Role Permissions Configuration
 const rolePermissions = {
+  developer: {
+    canEditOwnAccount: true,
+    canEditOtherAccounts: true,
+    canSuspendAccounts: true,
+    canEditRoles: true,
+    canApproveMaps: true,
+    canEditMaps: true,
+    canAccessAdminDashboard: true,
+  },
+  jd_manager: {
+    canEditOwnAccount: true,
+    canEditOtherAccounts: true,
+    canSuspendAccounts: true,
+    canEditRoles: true,
+    canApproveMaps: true,
+    canEditMaps: true,
+    canAccessAdminDashboard: true,
+  },
   jd_super_admin: {
     canEditOwnAccount: true,
     canEditOtherAccounts: true,
@@ -68,6 +94,24 @@ const rolePermissions = {
     canEditRoles: false,
     canAccessAdminDashboard: false,
   },
+  community_staff: {
+    canEditOwnAccount: true,
+    canEditOtherAccounts: false,
+    canSuspendAccounts: true,
+    canApproveMaps: true,
+    canEditMaps: true,
+    canEditRoles: false,
+    canAccessAdminDashboard: false,
+  },
+  jammer: {
+    canEditOwnAccount: true,
+    canEditOtherAccounts: false,
+    canSuspendAccounts: false,
+    canEditRoles: false,
+    canApproveMaps: false,
+    canEditMaps: false,
+    canAccessAdminDashboard: false,
+  },
   bot: {
     canEditOwnAccount: true,
     canEditOtherAccounts: true,
@@ -77,7 +121,52 @@ const rolePermissions = {
     canEditMaps: true,
     canAccessAdminDashboard: true,
   },
+  artist: {
+    canEditOwnAccount: true,
+    canEditOtherAccounts: false,
+    canSuspendAccounts: false,
+    canEditRoles: false,
+    canApproveMaps: false,
+    canEditMaps: true,
+    canAccessAdminDashboard: false,
+  },
+  vip: {
+    canEditOwnAccount: true,
+    canEditOtherAccounts: false,
+    canSuspendAccounts: false,
+    canEditRoles: false,
+    canApproveMaps: false,
+    canEditMaps: false,
+    canAccessAdminDashboard: false,
+  },
   supporter: {
+    canEditOwnAccount: true,
+    canEditOtherAccounts: false,
+    canSuspendAccounts: false,
+    canEditRoles: false,
+    canApproveMaps: false,
+    canEditMaps: false,
+    canAccessAdminDashboard: false,
+  },
+  ribbit: {
+    canEditOwnAccount: true,
+    canEditOtherAccounts: true,
+    canSuspendAccounts: true,
+    canEditRoles: true,
+    canApproveMaps: true,
+    canEditMaps: true,
+    canAccessAdminDashboard: true,
+  },
+  hizuru_chan: {
+    canEditOwnAccount: true,
+    canEditOtherAccounts: true,
+    canSuspendAccounts: true,
+    canEditRoles: true,
+    canApproveMaps: true,
+    canEditMaps: true,
+    canAccessAdminDashboard: true,
+  },
+  wiki_editor: {
     canEditOwnAccount: true,
     canEditOtherAccounts: false,
     canSuspendAccounts: false,
