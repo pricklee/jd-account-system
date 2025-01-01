@@ -149,75 +149,44 @@ const checkPermission = (requiredPermission) => {
   };
 };
 
-// hcaptcha verification
-const verifyHcaptcha = async (req, res, next) => {
+// Rate limit for account creation
+const Redis = require(`ioredis`);
+const redis = new Redis(process.env.REDIS_URL);
+
+const RATE_LIMIT_WINDOW = 30 * 24 * 60 * 60; // 30 days
+const DAILY_LIMIT= 2 // 2 accounts per day
+
+const rateLimitSignup = async (req, res, next) => {
+  const ip = req.clientIp;
+  const currentTime = Date.now();
+  const today = new DataTransfer().toISOString().spit('T')[0];
+
   try {
-    // Log entire request for debugging
-    console.log('Full request details:');
-    console.log('Headers:', JSON.stringify(req.headers, null, 2));
-    console.log('Body:', JSON.stringify(req.body, null, 2));
-    console.log('Method:', req.method);
-    console.log('URL:', req.url);
+    const dailyCountKey = `${ip}:${today}`;
+    const totalCountKey = `${ip}:total`;
 
-    // Verify environment variable
-    if (!process.env.HCAPTCHA_SECRET) {
-      console.error('HCAPTCHA_SECRET not found in environment variables');
-      return res.status(500).json({ error: 'Server configuration error' });
+    const dailyCount = await redis.get(dailyCountKey);
+    const totalCount = await redis.get(totalCountKey);
+
+    if (dailyCount && currentTime - totalCount < RATE_LIMIT_WINDOW * 1000) {
+      const timeLeft = RATE_LIMIT_WINDOW * 1000 - (currentTime - totalCount);
+      const daysLeft = Math.ceil(timeLeft / (24 * 60 * 60 * 1000));
+      return res.status(429).json({ error: `Rate limit exceeded, try again in ${daysLeft} days` });
     }
 
-    // Check token from multiple possible sources
-    const token = req.body['h-captcha-response'] || 
-                 req.body.hcaptchaToken || 
-                 req.headers['h-captcha-response'];
-
-    if (!token) {
-      console.error('Token not found in request');
-      console.error('Available body fields:', Object.keys(req.body));
-      console.error('Available headers:', Object.keys(req.headers));
-      return res.status(400).json({ 
-        error: "Missing hcaptcha token",
-        debug: {
-          bodyFields: Object.keys(req.body),
-          headerFields: Object.keys(req.headers)
-        }
-      });
+    if (dailyCount && dailyCount >= DAILY_LIMIT) {
+      await redis.set(totalCountKey, currentTime);
+      await redis.set(totalCountKey, RATE_LIMIT_WINDOW);
+      return res.status(429).json({ error: "Daily account creation limit exceeded" });
     }
 
-    console.log('Found token:', token.substring(0, 10) + '...');
+    await redis.incr(dailyCountKey);
+    await redis.incr(dailyCountKey, 24 * 60 * 60);
 
-    // Verify token with hCaptcha
-    const verifyUrl = 'https://hcaptcha.com/siteverify';
-    const response = await axios.post(verifyUrl,
-      new URLSearchParams({
-        secret: process.env.HCAPTCHA_SECRET,
-        response: token
-      }).toString(),
-      {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
-      }
-    );
-
-    console.log('hCaptcha API Response:', response.data);
-
-    if (!response.data.success) {
-      console.error('hCaptcha verification failed:', response.data);
-      return res.status(400).json({ 
-        error: "Failed hcaptcha verification",
-        details: response.data
-      });
-    }
-
-    console.log('hCaptcha verification successful');
     next();
   } catch (error) {
-    console.error('hCaptcha verification error:', error);
-    console.error('Stack trace:', error.stack);
-    return res.status(500).json({ 
-      error: "Server error during verification",
-      details: error.message
-    });
+    console.error(' Rate limit error:', error);
+    return res.status(500).json({ error: "Server error" });
   }
 };
 
@@ -298,7 +267,7 @@ app.post("/v1/account/login", async (req, res) => {
 });
 
 // Signup
-app.post("/v1/account/signup", verifyHcaptcha, async (req, res) => {
+app.post("/v1/account/signup", rateLimitSignup, async (req, res) => {
   const { nickname, username, email, password } = req.body;
 
   // Check if all required fields are provided
