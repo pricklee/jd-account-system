@@ -4,6 +4,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require('crypto');
 const os = require('os');
+const axios = require('axios');
 const { execSync } = require('child_process');
 require("dotenv").config();
 
@@ -148,6 +149,39 @@ const checkPermission = (requiredPermission) => {
   };
 };
 
+// hcaptcha verification
+const verifyHcaptcha = async (req, res, next) => {
+  const { hcaptchaToken } = req.body;
+
+  if (!hcaptchaToken) {
+    return res.status(400).json({ error: "Missing hcaptcha token" });
+  }
+
+  try {
+    const response = await axios.post(
+      'https://hcaptcha.com/siteverify',
+      {},
+      {
+        params: {
+          secret: process.env.HCAPTCHA_SECRET,
+          response: hcaptchaToken,
+        }
+      }
+    );
+
+    const { success } = response.data;
+
+    if (!success) { 
+      return res.status(400).json({ error: "Failed hcaptcha verification" });
+    }
+
+    next();
+  } catch (error) {
+    console.error("hCaptcha verification error:", error);
+    return res.status(500).json({ error: "Server error during hCaptcha verification" });
+  }
+};
+
 // Validate UUID format
 function validateUUID(uuid) {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -225,7 +259,7 @@ app.post("/v1/account/login", async (req, res) => {
 });
 
 // Signup
-app.post("/v1/account/signup", async (req, res) => {
+app.post("/v1/account/signup", verifyHcaptcha, async (req, res) => {
   const { nickname, username, email, password } = req.body;
 
   // Check if all required fields are provided
