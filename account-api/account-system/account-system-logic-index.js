@@ -151,26 +151,47 @@ const checkPermission = (requiredPermission) => {
 
 // hcaptcha verification
 const verifyHcaptcha = async (req, res, next) => {
-  // Debug incoming request
-  console.log('Request headers:', req.headers);
-  console.log('Request body:', req.body);
-
-  // Check both possible token field names
-  const token = req.body['h-captcha-response'] || req.body.hcaptchaToken;
-
-  if (!token) {
-    console.error('No hCaptcha token found in request. Body keys:', Object.keys(req.body));
-    return res.status(400).json({ error: "Missing hcaptcha token" });
-  }
-
   try {
-    console.log('Verifying token:', token.substring(0, 10) + '...');
-    const response = await axios.post(
-      'https://hcaptcha.com/siteverify',
+    // Log entire request for debugging
+    console.log('Full request details:');
+    console.log('Headers:', JSON.stringify(req.headers, null, 2));
+    console.log('Body:', JSON.stringify(req.body, null, 2));
+    console.log('Method:', req.method);
+    console.log('URL:', req.url);
+
+    // Verify environment variable
+    if (!process.env.HCAPTCHA_SECRET) {
+      console.error('HCAPTCHA_SECRET not found in environment variables');
+      return res.status(500).json({ error: 'Server configuration error' });
+    }
+
+    // Check token from multiple possible sources
+    const token = req.body['h-captcha-response'] || 
+                 req.body.hcaptchaToken || 
+                 req.headers['h-captcha-response'];
+
+    if (!token) {
+      console.error('Token not found in request');
+      console.error('Available body fields:', Object.keys(req.body));
+      console.error('Available headers:', Object.keys(req.headers));
+      return res.status(400).json({ 
+        error: "Missing hcaptcha token",
+        debug: {
+          bodyFields: Object.keys(req.body),
+          headerFields: Object.keys(req.headers)
+        }
+      });
+    }
+
+    console.log('Found token:', token.substring(0, 10) + '...');
+
+    // Verify token with hCaptcha
+    const verifyUrl = 'https://hcaptcha.com/siteverify';
+    const response = await axios.post(verifyUrl,
       new URLSearchParams({
         secret: process.env.HCAPTCHA_SECRET,
         response: token
-      }),
+      }).toString(),
       {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
@@ -178,17 +199,25 @@ const verifyHcaptcha = async (req, res, next) => {
       }
     );
 
-    console.log('hCaptcha API response:', response.data);
+    console.log('hCaptcha API Response:', response.data);
 
-    if (!response.data.success) { 
+    if (!response.data.success) {
       console.error('hCaptcha verification failed:', response.data);
-      return res.status(400).json({ error: "Failed hcaptcha verification" });
+      return res.status(400).json({ 
+        error: "Failed hcaptcha verification",
+        details: response.data
+      });
     }
 
+    console.log('hCaptcha verification successful');
     next();
   } catch (error) {
-    console.error("hCaptcha verification error:", error);
-    return res.status(500).json({ error: "Server error during hCaptcha verification" });
+    console.error('hCaptcha verification error:', error);
+    console.error('Stack trace:', error.stack);
+    return res.status(500).json({ 
+      error: "Server error during verification",
+      details: error.message
+    });
   }
 };
 
