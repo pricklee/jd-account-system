@@ -257,7 +257,9 @@ app.post("/v1/account/login", async (req, res) => {
         id: user.id,
         username: user.username,
         role_perms: user.role_perms,
-        is_staff: user.is_staff
+        is_staff: user.is_staff,
+        signup_ip: user.signup_ip,
+        last_login_ip: user.last_login_ip
       },
     });
   } catch (error) {
@@ -337,7 +339,7 @@ app.post("/v1/account/signup", rateLimitSignup, async (req, res) => {
 });
 
 // UUID list endpoint
-app.get("/v1/account/uuid", async (req, res) => {
+app.get("/v1/account/users", async (req, res) => {
   try {
     const result = await pool.query(
       "SELECT id, username, nickname, role_perms, is_staff, is_suspended FROM users ORDER BY username ASC"
