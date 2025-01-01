@@ -168,7 +168,7 @@ const rateLimitSignup = async (req, res, next) => {
     const dailyCount = await redis.get(dailyCountKey);
     const totalCount = await redis.get(totalCountKey);
 
-    if (dailyCount && currentTime - totalCount < RATE_LIMIT_WINDOW * 1000) {
+    if (totalCount && currentTime - totalCount < RATE_LIMIT_WINDOW * 1000) {
       const timeLeft = RATE_LIMIT_WINDOW * 1000 - (currentTime - totalCount);
       const daysLeft = Math.ceil(timeLeft / (24 * 60 * 60 * 1000));
       return res.status(429).json({ error: `Rate limit exceeded, try again in ${daysLeft} days` });
@@ -176,12 +176,12 @@ const rateLimitSignup = async (req, res, next) => {
 
     if (dailyCount && dailyCount >= DAILY_LIMIT) {
       await redis.set(totalCountKey, currentTime);
-      await redis.set(totalCountKey, RATE_LIMIT_WINDOW);
+      await redis.expire(totalCountKey, RATE_LIMIT_WINDOW);
       return res.status(429).json({ error: "Daily account creation limit exceeded" });
     }
 
     await redis.incr(dailyCountKey);
-    await redis.incr(dailyCountKey, 24 * 60 * 60);
+    await redis.expire(dailyCountKey, 24 * 60 * 60);
 
     next();
   } catch (error) {
