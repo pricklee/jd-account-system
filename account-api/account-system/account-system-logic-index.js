@@ -25,7 +25,7 @@ const pool = new Pool({
   },
 });
 
-  const bannedWords = ["nigger", "ass", "nigga", "niga", "nig", "niger", "fuck", "fag", "fagget", "boob", "dick", "bastard", "faggot", "retard", "penis", "slut", "tit", "tits", "fucker", "nazi", "isis", "sex", "rape", "porn", "pornhub", "xnxx", "xvideos", "xhamsters", "pussy", "vagina", "r34", "rule34", "genocide", "trany", "tranny", "tranni", "trani", "f@g", "r@pe", "b00b", "misticalkai", "pricklety", "jammerdash", "automoderator", "hizuru_chan", "hizuru", "n-word", "k-word", "kike", "chink", "ch1nk", "ch!nk", "dyke", "shemale", "she-male", "shemale", "she-male", "p0rn", "porno", "p0rno", "anus", "genitals", "cock", "cocks", "c0ck", "c0cks"]
+  const bannedWords = ["nigger", "ass", "nigga", "niga", "nig", "niger", "fuck", "fag", "fagget", "boob", "dick", "bastard", "faggot", "retard", "penis", "slut", "tit", "tits", "fucker", "nazi", "isis", "sex", "rape", "porn", "pornhub", "xnxx", "xvideos", "xhamsters", "pussy", "vagina", "r34", "rule34", "genocide", "trany", "tr@nny", "tr@nni", "donaldtrump", "tranny", "tranni", "trani", "f@g", "r@pe", "b00b", "misticalkai", "pricklety", "jammerdash", "automoderator", "hizuru_chan", "hizuru", "n-word", "k-word", "kike", "chink", "ch1nk", "ch!nk", "dyke", "shemale", "she-male", "shemale", "she-male", "p0rn", "porno", "p0rno", "anus", "genitals", "cock", "cocks", "c0ck", "c0cks", "bitch", "b!tch", "cunt"]
 
   const allowedEmailDomains = ["gmail.com", "jammerdash.com", "misticalkai.com", "outlook.com", "hotmail.com", "msn.com", "aol.com", "protonmail.com", "nijika.dev", "live.com", "yahoo.com", "icloud.com", "zoho.com", "mail.com", "yandex.com", "yandex.ru", "gmx.com", "fastmail.com"]
 
@@ -151,27 +151,37 @@ const checkPermission = (requiredPermission) => {
 
 // hcaptcha verification
 const verifyHcaptcha = async (req, res, next) => {
-  const { hcaptchaToken } = req.body;
+  // Debug incoming request
+  console.log('Request headers:', req.headers);
+  console.log('Request body:', req.body);
 
-  if (!hcaptchaToken) {
+  // Check both possible token field names
+  const token = req.body['h-captcha-response'] || req.body.hcaptchaToken;
+
+  if (!token) {
+    console.error('No hCaptcha token found in request. Body keys:', Object.keys(req.body));
     return res.status(400).json({ error: "Missing hcaptcha token" });
   }
 
   try {
+    console.log('Verifying token:', token.substring(0, 10) + '...');
     const response = await axios.post(
       'https://hcaptcha.com/siteverify',
-      {},
+      new URLSearchParams({
+        secret: process.env.HCAPTCHA_SECRET,
+        response: token
+      }),
       {
-        params: {
-          secret: process.env.HCAPTCHA_SECRET,
-          response: hcaptchaToken,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
         }
       }
     );
 
-    const { success } = response.data;
+    console.log('hCaptcha API response:', response.data);
 
-    if (!success) { 
+    if (!response.data.success) { 
+      console.error('hCaptcha verification failed:', response.data);
       return res.status(400).json({ error: "Failed hcaptcha verification" });
     }
 
