@@ -253,6 +253,17 @@ const checkPermission = (requiredPermission) => {
   };
 };
 
+const allowedUserAgents = process.env.ALLOWED_USER_AGENTS ? process.env.ALLOWED_USER_AGENTS.split(',') : [];
+
+// User agent middleware
+const userAgentAllowList = (req, res, next) => {
+  const userAgent = req.headers['user-agent'];
+  if (!allowedUserAgents.includes(userAgent)) {
+    return res.status(403).json({ error: "Forbidden user agent: This user agent is not allowed" });
+  }
+  next();
+};
+
 // Rate limit for account creation
 const Redis = require(`ioredis`);
 const redis = new Redis(process.env.REDIS_URL);
@@ -308,7 +319,7 @@ function validateUUID(uuid) {
 
 // Routes
 // Login endpoint - uses username/password
-app.post("/v1/account/login", async (req, res) => {
+app.post("/v1/account/login", userAgentAllowList, async (req, res) => {
   console.log("Login attempt - Request body:", req.body);
 
   const { username, password } = req.body;
@@ -380,7 +391,7 @@ app.post("/v1/account/login", async (req, res) => {
 });
 
 // Signup
-app.post("/v1/account/signup", rateLimitSignup, async (req, res) => {
+app.post("/v1/account/signup", userAgentAllowList, rateLimitSignup, async (req, res) => {
   const { nickname, username, email, password } = req.body;
 
   // Check if all required fields are provided
