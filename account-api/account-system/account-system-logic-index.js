@@ -258,8 +258,9 @@ const allowedUserAgents = process.env.ALLOWED_USER_AGENTS ? process.env.ALLOWED_
 // User agent middleware
 const userAgentAllowList = (req, res, next) => {
   const userAgent = req.headers['user-agent'];
-  if (!allowedUserAgents.includes(userAgent)) {
-    return res.status(403).json({ error: "Forbidden user agent: This user agent is not allowed" });
+  const referer = req.headers['referer'];
+  if (!referer || userAgent.includes('axios') || !allowedUserAgents.includes(userAgent)) {
+    return res.status(403).json({ error: "Forbidden user agent or referer: This user agent or referer is not allowed" });
   }
   next();
 };
