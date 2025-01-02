@@ -260,10 +260,16 @@ const redis = new Redis(process.env.REDIS_URL);
 const RATE_LIMIT_WINDOW = 30 * 24 * 60 * 60; // 30 days
 const DAILY_LIMIT= 2 // 2 accounts per day
 
+const whiteList = process.env.WHITELIST_IPS ? process.env.WHITELIST_IPS.split(',') : [];
+
 const rateLimitSignup = async (req, res, next) => {
   const ip = req.clientIp;
   const currentTime = Date.now();
   const today = new Date().toISOString().split('T')[0];
+
+if (whiteList.includes(ip)) {
+  return next();
+}
 
   try {
     const dailyCountKey = `${ip}:${today}`;
@@ -340,6 +346,7 @@ app.post("/v1/account/login", async (req, res) => {
     const token = jwt.sign(
       {
         id: user.id,
+        nickname: user.nickname,
         username: user.username,
         role_perms: user.role_perms,
       },
