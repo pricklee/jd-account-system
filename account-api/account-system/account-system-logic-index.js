@@ -258,6 +258,18 @@ const checkPermission = (requiredPermission) => {
   };
 };
 
+const allowedUserAgents = process.env.ALLOWED_USER_AGENTS ? process.env.ALLOWED_USER_AGENTS.split(',') : [];
+
+// User agent middleware
+const userAgentAllowList = (req, res, next) => {
+  const userAgent = req.headers['user-agent'];
+  const referer = req.headers['referer'];
+  if (!referer || userAgent.includes('axios') || !allowedUserAgents.includes(userAgent)) {
+    return res.status(403).json({ error: "Forbidden user agent or referer: This user agent or referer is not allowed" });
+  }
+  next();
+};
+
 // Rate limit for account creation
 const Redis = require(`ioredis`);
 const redis = new Redis(process.env.REDIS_URL);
@@ -288,10 +300,17 @@ const verifyCaptcha = async (req, res, next) => {
     return res.status(500).json({ error: "Server error" });
   }
 };
+=======
+const whiteList = process.env.WHITELIST_IPS ? process.env.WHITELIST_IPS.split(',') : [];
+
 const rateLimitSignup = async (req, res, next) => {
   const ip = req.clientIp;
   const currentTime = Date.now();
   const today = new Date().toISOString().split('T')[0];
+
+if (whiteList.includes(ip)) {
+  return next();
+}
 
   try {
     const dailyCountKey = `${ip}:${today}`;
@@ -330,7 +349,7 @@ function validateUUID(uuid) {
 
 // Routes
 // Login endpoint - uses username/password
-app.post("/v1/account/login", verifyCaptcha, async (req, res) => {
+app.post("/v1/account/login", verifyCaptcha, userAgentAllowList, async (req, res) => {
   console.log("Login attempt - Request body:", req.body);
 
   const { username, password } = req.body;
@@ -368,6 +387,7 @@ app.post("/v1/account/login", verifyCaptcha, async (req, res) => {
     const token = jwt.sign(
       {
         id: user.id,
+        nickname: user.nickname,
         username: user.username,
         role_perms: user.role_perms,
       },
@@ -401,7 +421,8 @@ app.post("/v1/account/login", verifyCaptcha, async (req, res) => {
 });
 
 // Signup
-app.post("/v1/account/signup", verifyCaptcha, rateLimitSignup, async (req, res) => {
+app.post("/v1/account/signup", verifyCaptcha, userAgentAllowList, rateLimitSignup, async (req, res) => {
+
   const { nickname, username, email, password } = req.body;
 
   // Check if all required fields are provided
