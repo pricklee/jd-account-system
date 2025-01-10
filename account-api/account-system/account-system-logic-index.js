@@ -503,30 +503,49 @@ app.post("/v1/account/signup", verifyCaptcha, rateLimitSignup, async (req, res) 
 
 
 // UUID list endpoint
+const getCountryFromIP = async (ip) => {
+  try {
+    const response = await axios.get(`https://ipapi.co/${ip}/json/`);
+    return {
+      country: response.data.country_name,
+      region: response.data.region
+    };
+  } catch (error) {
+    console.error("Error fetching country from IP:", error);
+    return { country: "Unknown", region: "Unknown" };
+  }
+};
+
 app.get("/v1/account/users", async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT id, username, nickname, role_perms, is_staff, is_suspended FROM users ORDER BY username ASC"
+      "SELECT id, username, nickname, role_perms, is_staff, is_suspended, signup_ip FROM users ORDER BY username ASC"
     );
-    
-    const users = result.rows.map(row => ({
-      uuid: row.id,
-      display_name: row.nickname,
-      username: row.username,
-      role: row.role_perms,
-      staff: row.is_staff,
-      suspended: row.is_suspended
+
+    const users = await Promise.all(result.rows.map(async (row) => {
+      const location = await getCountryFromIP(row.signup_ip);
+      return {
+        uuid: row.id,
+        display_name: row.nickname,
+        username: row.username,
+        role: row.role_perms,
+        staff: row.is_staff,
+        suspended: row.is_suspended,
+        country: location.country,
+        region: location.region
+      };
     }));
-    
-    res.status(200).json({ 
+
+    res.status(200).json({
       total: users.length,
-      users: users 
+      users: users
     });
   } catch (error) {
     console.error("Error fetching UUIDs:", error);
     res.status(500).json({ error: "Server error" });
   }
 });
+
 
 // Suspend/Unsuspend
 app.post("/v1/account/:id/suspend", authenticate, checkPermission("canSuspendAccounts"), async (req, res) => {
