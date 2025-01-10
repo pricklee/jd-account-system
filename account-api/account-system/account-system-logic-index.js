@@ -300,7 +300,6 @@ const verifyCaptcha = async (req, res, next) => {
     return res.status(500).json({ error: "Server error" });
   }
 };
-=======
 const whiteList = process.env.WHITELIST_IPS ? process.env.WHITELIST_IPS.split(',') : [];
 
 const rateLimitSignup = async (req, res, next) => {
