@@ -398,7 +398,7 @@ app.post("/v1/account/login", verifyCaptcha, userAgentAllowList, async (req, res
     // Update last login IP
     await pool.query(
       "UPDATE users SET last_login_ip = $1 WHERE id = $2",
-      [req.clientIp, user.id]
+      [req.expressIp, user.id]
     );
 
     console.log(`User logged in from IP: ${req.clientIp}`);
