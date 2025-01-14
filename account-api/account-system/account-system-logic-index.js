@@ -12,14 +12,12 @@ const nodemailer = require("nodemailer");
 const app = express();
 app.use(express.json());
 
-// Middleware to force HTTPS
 app.use((req, res, next) => {
   if (req.headers['x-forwarded-proto'] !== 'https') {
     return res.redirect(`https://${req.headers.host}${req.url}`);
   }
   next();
 });
-
 // Email configuration 
 const transporter = nodemailer.createTransport({
   host: "smtp.zoho.com",
@@ -30,7 +28,6 @@ const transporter = nodemailer.createTransport({
     pass: process.env.ZOHO_PASSWORD,
   },
 });
-
 // Trust proxy settings
 app.set('trust proxy', true);
 
@@ -64,7 +61,7 @@ const pool = new Pool({
 
   const bannedWords = ["nigger", "ass", "nigga", "niga", "nig", "niger", "fuck", "fag", "fagget", "boob", "dick", "bastard", "faggot", "retard", "penis", "slut", "tit", "tits", "fucker", "nazi", "isis", "sex", "rape", "porn", "pornhub", "xnxx", "xvideos", "xhamsters", "pussy", "vagina", "r34", "rule34", "genocide", "trany", "tr@nny", "tr@nni", "donaldtrump", "tranny", "tranni", "trani", "f@g", "r@pe", "b00b", "misticalkai", "pricklety", "jammerdash", "automoderator", "hizuru_chan", "hizuru", "n-word", "k-word", "kike", "chink", "ch1nk", "ch!nk", "dyke", "shemale", "she-male", "shemale", "she-male", "p0rn", "porno", "p0rno", "anus", "genitals", "cock", "cocks", "c0ck", "c0cks", "bitch", "b!tch", "cunt"]
 
-  const allowedEmailDomains = ["gmail.com", "jammerdash.com", "outlook.com", "hotmail.com", "protonmail.com", "nijika.dev", "live.com", "yahoo.com", "icloud.com", "mail.com"]
+  const allowedEmailDomains = ["gmail.com", "jammerdash.com", "misticalkai.com", "outlook.com", "hotmail.com", "msn.com", "aol.com", "protonmail.com", "nijika.dev", "live.com", "yahoo.com", "icloud.com", "zoho.com", "mail.com", "yandex.com", "yandex.ru", "gmx.com", "fastmail.com"]
 
   const containsProfanity = (text) => {
       const lowerCaseText = text.toLowerCase();
@@ -269,7 +266,7 @@ const checkPermission = (requiredPermission) => {
 
 const allowedUserAgents = process.env.ALLOWED_USER_AGENTS ? process.env.ALLOWED_USER_AGENTS.split(',') : [];
 
-// User agent middleware 
+// User agent middleware
 const userAgentAllowList = (req, res, next) => {
   const userAgent = req.headers['user-agent'];
   const referer = req.headers['referer'];
@@ -282,6 +279,7 @@ const userAgentAllowList = (req, res, next) => {
 // Rate limit for account creation
 const Redis = require(`ioredis`);
 const redis = new Redis(process.env.REDIS_URL);
+const axios = require('axios');
 
 
 app.use(limiter);
@@ -308,12 +306,16 @@ const verifyCaptcha = async (req, res, next) => {
     return res.status(500).json({ error: "Server error" });
   }
 };
+const whiteList = process.env.WHITELIST_IPS ? process.env.WHITELIST_IPS.split(',') : [];
 
 const rateLimitSignup = async (req, res, next) => {
   const ip = req.clientIp;
   const currentTime = Date.now();
   const today = new Date().toISOString().split('T')[0];
 
+if (whiteList.includes(ip)) {
+  return next();
+}
 
   try {
     const dailyCountKey = `${ip}:${today}`;
