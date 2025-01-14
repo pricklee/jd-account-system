@@ -286,10 +286,10 @@ const DAILY_LIMIT= 2 // 2 accounts per day
 // CAPTCHA Verification Middleware
 const verifyCaptcha = async (req, res, next) => {
   const captchaResponse = req.body.captchaResponse;
-  if (!captchaResponse && req.headers['user-agent'] != env.CAPTCHA_SKIP_UA) { 
+  if (!captchaResponse && req.headers['user-agent'] != process.env.CAPTCHA_SKIP_UA) { 
     return res.status(400).json({ error: "CAPTCHA is required" });
   }
-  else if (!captchaResponse && req.headers['user-agent'] === env.CAPTCHA_SKIP_UA) {
+  else if (!captchaResponse && req.headers['user-agent'] === process.env.CAPTCHA_SKIP_UA) {
     return next(); // Skip CAPTCHA verification if request is from the game client
   }
 
