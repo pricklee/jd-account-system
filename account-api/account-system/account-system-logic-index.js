@@ -478,7 +478,7 @@ app.post("/v1/account/signup", verifyCaptcha, userAgentAllowList, rateLimitSignu
     // Insert the new user into the database
     const result = await pool.query(
       "INSERT INTO users (nickname, username, email, password, signup_ip) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-      [nickname, username, email, bcryptHashedPassword, req.clientIp]
+      [nickname, username, email, bcryptHashedPassword, req.expressIp]
     );
 
     console.log(`New signup from IP: ${req.clientIp}`);
