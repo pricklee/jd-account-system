@@ -290,6 +290,10 @@ const verifyCaptcha = async (req, res, next) => {
     return res.status(400).json({ error: "CAPTCHA is required" });
   }
 
+  if (req.headers['x-client'] === 'Jammer-Dash') {
+    return next(); // Skip CAPTCHA verification if request is from the game client
+  }
+
   try {
     const response = await axios.post(`https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${captchaResponse}`);
     if (response.data.success) {
@@ -302,16 +306,12 @@ const verifyCaptcha = async (req, res, next) => {
     return res.status(500).json({ error: "Server error" });
   }
 };
-const whiteList = process.env.WHITELIST_IPS ? process.env.WHITELIST_IPS.split(',') : [];
 
 const rateLimitSignup = async (req, res, next) => {
   const ip = req.clientIp;
   const currentTime = Date.now();
   const today = new Date().toISOString().split('T')[0];
 
-if (whiteList.includes(ip)) {
-  return next();
-}
 
   try {
     const dailyCountKey = `${ip}:${today}`;
