@@ -271,7 +271,7 @@ const checkPermission = (requiredPermission) => {
 
 const allowedUserAgents = process.env.ALLOWED_USER_AGENTS ? process.env.ALLOWED_USER_AGENTS.split(',') : [];
 
-// User agent middleware
+// User agent middleware 
 const userAgentAllowList = (req, res, next) => {
   const userAgent = req.headers['user-agent'];
   const referer = req.headers['referer'];
@@ -284,7 +284,6 @@ const userAgentAllowList = (req, res, next) => {
 // Rate limit for account creation
 const Redis = require(`ioredis`);
 const redis = new Redis(process.env.REDIS_URL);
-const axios = require('axios');
 
 
 app.use(limiter);
