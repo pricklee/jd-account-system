@@ -279,10 +279,6 @@ const userAgentAllowList = (req, res, next) => {
 // Rate limit for account creation
 const Redis = require(`ioredis`);
 const redis = new Redis(process.env.REDIS_URL);
-const axios = require('axios');
-
-
-app.use(limiter);
 
 const RATE_LIMIT_WINDOW = 30 * 24 * 60 * 60; // 30 days
 const DAILY_LIMIT= 2 // 2 accounts per day
