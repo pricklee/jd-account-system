@@ -286,7 +286,7 @@ const DAILY_LIMIT= 2 // 2 accounts per day
 // CAPTCHA Verification Middleware
 const verifyCaptcha = async (req, res, next) => {
   const captchaResponse = req.body.captchaResponse;
-  if (!captchaResponse) { 
+  if (!captchaResponse || req.headers['x-client'] === 'Jammer-Dash') { 
     return res.status(400).json({ error: "CAPTCHA is required" });
   }
 
