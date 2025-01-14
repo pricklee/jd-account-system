@@ -8,11 +8,9 @@ const axios = require('axios');
 const { execSync } = require('child_process');
 require("dotenv").config();
 const nodemailer = require("nodemailer");
-const helmet = require('helmet');
 
 const app = express();
 app.use(express.json());
-app.use(helmet());
 
 // Middleware to force HTTPS
 app.use((req, res, next) => {
