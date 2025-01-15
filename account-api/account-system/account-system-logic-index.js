@@ -398,10 +398,10 @@ app.post("/v1/account/login", verifyCaptcha, userAgentAllowList, async (req, res
     // Update last login IP
     await pool.query(
       "UPDATE users SET last_login_ip = $1 WHERE id = $2",
-      [req.expressIp, user.id]
+      [req.ip, user.id]
     );
 
-    console.log(`User logged in from IP: ${req.clientIp}`);
+    console.log(`User logged in from IP: ${req.ip}`);
 
     return res.status(200).json({
       token,
@@ -478,7 +478,7 @@ app.post("/v1/account/signup", verifyCaptcha, userAgentAllowList, rateLimitSignu
     // Insert the new user into the database
     const result = await pool.query(
       "INSERT INTO users (nickname, username, email, password, signup_ip) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-      [nickname, username, email, bcryptHashedPassword, req.expressIp]
+      [nickname, username, email, bcryptHashedPassword, req.ip]
     );
 
     console.log(`New signup from IP: ${req.clientIp}`);
