@@ -476,12 +476,15 @@ app.post("/v1/account/signup", verifyCaptcha, userAgentAllowList, rateLimitSignu
     const bcryptHashedPassword = await bcrypt.hash(password, salt);
 
     // Insert the new user into the database
+    const location = await getCountryFromIP(req.ip);
+    const countryCode = location.countryCode;
+
     const result = await pool.query(
-      "INSERT INTO users (nickname, username, email, password, signup_ip) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-      [nickname, username, email, bcryptHashedPassword, req.ip]
+      "INSERT INTO users (nickname, username, email, password, signup_ip, country_code) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+      [nickname, username, email, bcryptHashedPassword, req.ip, countryCode]
     );
 
-    console.log(`New signup from IP: ${req.clientIp}`);
+    console.log(`New signup from IP: ${req.ip}`);
     
     
     app.get("/v1/account/verify-email", async (req, res) => {
@@ -524,13 +527,27 @@ app.post("/v1/account/signup", verifyCaptcha, userAgentAllowList, rateLimitSignu
 
 
 // UUID list endpoint
+const NodeCache = require("node-cache");
+const ipCache = new NodeCache({ stdTTL: 86400 }); // Cache for 24 hours
+
 const getCountryFromIP = async (ip) => {
+  const cachedData = ipCache.get(ip);
+  if (cachedData) {
+    return cachedData;
+  }
+
   try {
     const response = await axios.get(`https://ipapi.co/${ip}/json/`);
-    return {
+    const locationData = {
       country: response.data.country_name,
-      region: response.data.region
+      region: response.data.region,
+      countryCode: response.data.country_code
     };
+    ipCache.set(ip, locationData);
+    return locationData;
+    
+    ipCache.set(ip, locationData);
+    return locationData;
   } catch (error) {
     console.error("Error fetching country from IP:", error);
     return { country: "Unknown", region: "Unknown" };
