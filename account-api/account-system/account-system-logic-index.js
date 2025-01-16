@@ -478,13 +478,34 @@ app.post("/v1/account/signup", verifyCaptcha, userAgentAllowList, rateLimitSignu
 
     // Insert the new user into the database
     const location = await getCountryFromIP(req.ip);
-    const countryCode = location.countryCode;
 
     const result = await pool.query(
-      "INSERT INTO users (nickname, username, email, password, signup_ip, country_code) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
-      [nickname, username, email, bcryptHashedPassword, req.ip, countryCode]
+      "INSERT INTO users (nickname, username, email, password, signup_ip, country_code, country, region) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
+      [nickname, username, email, bcryptHashedPassword, req.ip, location.countryCode, location.country, location.region]
     );
-
+    const getCountryFromIP = async (ip) => {
+      const cachedData = ipCache.get(ip);
+      if (cachedData) {
+        return cachedData;
+      }
+    
+      try {
+        const response = await axios.get(`https://ipapi.co/${ip}/json/`);
+        const locationData = {
+          country: response.data.country_name,
+          region: response.data.region,
+          countryCode: response.data.country_code
+        };
+        ipCache.set(ip, locationData);
+        return locationData;
+        
+        ipCache.set(ip, locationData);
+        return locationData;
+      } catch (error) {
+        console.error("Error fetching country from IP:", error);
+        return { country: "Unknown", region: "Unknown" };
+      }
+    };
     console.log(`New signup from IP: ${req.ip}`);
     
     
@@ -529,29 +550,7 @@ app.post("/v1/account/signup", verifyCaptcha, userAgentAllowList, rateLimitSignu
 
 const ipCache = new NodeCache({ stdTTL: 86400 }); // Cache for 24 hours
 
-const getCountryFromIP = async (ip) => {
-  const cachedData = ipCache.get(ip);
-  if (cachedData) {
-    return cachedData;
-  }
 
-  try {
-    const response = await axios.get(`https://ipapi.co/${ip}/json/`);
-    const locationData = {
-      country: response.data.country_name,
-      region: response.data.region,
-      countryCode: response.data.country_code
-    };
-    ipCache.set(ip, locationData);
-    return locationData;
-    
-    ipCache.set(ip, locationData);
-    return locationData;
-  } catch (error) {
-    console.error("Error fetching country from IP:", error);
-    return { country: "Unknown", region: "Unknown" };
-  }
-};
 
 app.get("/v1/account/users", async (req, res) => {
   try {
@@ -560,7 +559,6 @@ app.get("/v1/account/users", async (req, res) => {
     );
 
     const users = await Promise.all(result.rows.map(async (row) => {
-      const location = await getCountryFromIP(row.signup_ip);
       return {
         uuid: row.id,
         display_name: row.nickname,
