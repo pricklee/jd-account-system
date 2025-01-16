@@ -527,8 +527,6 @@ app.post("/v1/account/signup", verifyCaptcha, userAgentAllowList, rateLimitSignu
 
 
 
-// UUID list endpoint
-const NodeCache = require("node-cache");
 const ipCache = new NodeCache({ stdTTL: 86400 }); // Cache for 24 hours
 
 const getCountryFromIP = async (ip) => {
