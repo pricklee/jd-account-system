@@ -308,7 +308,7 @@ const verifyCaptcha = async (req, res, next) => {
 };
 
 const rateLimitSignup = async (req, res, next) => {
-  const ip = req.clientIp;
+  const ip = req.ip;
   const currentTime = Date.now();
   const today = new Date().toISOString().split('T')[0];
 
