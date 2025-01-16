@@ -526,6 +526,9 @@ app.post("/v1/account/signup", verifyCaptcha, userAgentAllowList, rateLimitSignu
 
 
 
+// UUID list endpoint
+const NodeCache = require("node-cache");
+const ipCache = new NodeCache({ stdTTL: 86400 }); // Cache for 24 hours
 
 const getCountryFromIP = async (ip) => {
   const cachedData = ipCache.get(ip);
@@ -540,9 +543,11 @@ const getCountryFromIP = async (ip) => {
       region: response.data.region,
       countryCode: response.data.country_code
     };
+    ipCache.set(ip, locationData);
     return locationData;
     
-    
+    ipCache.set(ip, locationData);
+    return locationData;
   } catch (error) {
     console.error("Error fetching country from IP:", error);
     return { country: "Unknown", region: "Unknown" };
@@ -564,8 +569,9 @@ app.get("/v1/account/users", async (req, res) => {
         role: row.role_perms,
         staff: row.is_staff,
         suspended: row.is_suspended,
-        country: location.country,
-        region: location.region
+        country: row.country,
+        region: row.region,
+        country_code: row.country_code 
       };
     }));
 
