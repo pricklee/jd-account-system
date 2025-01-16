@@ -323,13 +323,8 @@ const rateLimitSignup = async (req, res, next) => {
     const totalCountKey = `${ip}:total`;
 
     const dailyCount = await redis.get(dailyCountKey);
-    const totalCount = await redis.get(totalCountKey);
 
-    if (totalCount && currentTime - totalCount < RATE_LIMIT_WINDOW * 1000) {
-      const timeLeft = RATE_LIMIT_WINDOW * 1000 - (currentTime - totalCount);
-      const daysLeft = Math.ceil(timeLeft / (24 * 60 * 60 * 1000));
-      return res.status(429).json({ error: `Rate limit exceeded, try again in ${daysLeft} days` });
-    }
+   
 
     if (dailyCount && dailyCount >= DAILY_LIMIT) {
       await redis.set(totalCountKey, currentTime);
