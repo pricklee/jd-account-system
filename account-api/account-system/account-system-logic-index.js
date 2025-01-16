@@ -526,9 +526,6 @@ app.post("/v1/account/signup", verifyCaptcha, userAgentAllowList, rateLimitSignu
 
 
 
-// UUID list endpoint
-const NodeCache = require("node-cache");
-const ipCache = new NodeCache({ stdTTL: 86400 }); // Cache for 24 hours
 
 const getCountryFromIP = async (ip) => {
   const cachedData = ipCache.get(ip);
@@ -546,8 +543,7 @@ const getCountryFromIP = async (ip) => {
     ipCache.set(ip, locationData);
     return locationData;
     
-    ipCache.set(ip, locationData);
-    return locationData;
+    
   } catch (error) {
     console.error("Error fetching country from IP:", error);
     return { country: "Unknown", region: "Unknown" };
