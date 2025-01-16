@@ -540,7 +540,6 @@ const getCountryFromIP = async (ip) => {
       region: response.data.region,
       countryCode: response.data.country_code
     };
-    ipCache.set(ip, locationData);
     return locationData;
     
     
