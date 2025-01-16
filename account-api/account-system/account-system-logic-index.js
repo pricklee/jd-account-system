@@ -414,8 +414,9 @@ app.post("/v1/account/login", verifyCaptcha, userAgentAllowList, async (req, res
         username: user.username,
         role_perms: user.role_perms,
         is_staff: user.is_staff,
-        signup_ip: user.signup_ip,
-        last_login_ip: user.last_login_ip
+        country: user.country,
+        region: user.region,
+        cc: user.country_code
       },
     });
   } catch (error) {
