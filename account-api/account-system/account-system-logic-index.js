@@ -312,6 +312,11 @@ const rateLimitSignup = async (req, res, next) => {
   const currentTime = Date.now();
   const today = new Date().toISOString().split('T')[0];
 
+  const ipWhitelist = process.env.IP_WHITELIST ? process.env.IP_WHITELIST.split(',') : [];
+
+  if (ipWhitelist.includes(ip)) {
+    return next(); // Bypass rate limit for whitelisted IPs
+  }
 
   try {
     const dailyCountKey = `${ip}:${today}`;
@@ -337,7 +342,7 @@ const rateLimitSignup = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error(' Rate limit error:', error);
+    console.error('Rate limit error:', error);
     return res.status(500).json({ error: "Server error" });
   }
 };
