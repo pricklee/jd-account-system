@@ -482,9 +482,10 @@ app.post("/v1/account/signup", verifyCaptcha, userAgentAllowList, rateLimitSignu
     // Insert the new user into the database
     const location = await getCountryFromIP(req.ip);
 
+    const joinedDate = new Date().toISOString().replace('T', ' ').replace(/\..+/, '');
     const result = await pool.query(
-      "INSERT INTO users (nickname, username, email, password, signup_ip, country_code, country, region) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
-      [nickname, username, email, bcryptHashedPassword, req.ip, location.countryCode, location.country, location.region]
+      "INSERT INTO users (nickname, username, email, password, signup_ip, country_code, country, region, joined_date) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *",
+      [nickname, username, email, bcryptHashedPassword, req.ip, location.countryCode, location.country, location.region, joinedDate]
     );
     
     console.log(`New signup from IP: ${req.ip}`);
