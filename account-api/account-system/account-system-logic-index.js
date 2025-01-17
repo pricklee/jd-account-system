@@ -674,11 +674,16 @@ app.get("/v1/account/:id", async (req, res) => {
 
     res.status(200).json(result.rows[0]);
     setTimeout(async () => {
+      try {
       await pool.query(
         "UPDATE users SET online = $1 WHERE last_login_ip = $2",
         [false, req.ip]
       );
-    }, 70000);
+      console.log(`User with IP ${req.ip} set to offline`);
+      } catch (error) {
+      console.error("Error updating user online status:", error);
+      }
+    }, 65000); // 1 minute 5 seconds
   } catch (error) {
     console.error("Error fetching user:", error);
     res.status(500).json({ error: "Server error" });
