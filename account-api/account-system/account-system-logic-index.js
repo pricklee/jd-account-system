@@ -658,7 +658,7 @@ app.post("/v1/account/:id/edit-user-role", authenticate, checkPermission("canEdi
     res.status(500).json({ error: "Server error" });
   }
 });
-
+const userPingTimes = new Map();
 // Get user info endpoint - uses UUID
 app.get("/v1/account/:id", async (req, res) => {
   const userId = req.params.id;
