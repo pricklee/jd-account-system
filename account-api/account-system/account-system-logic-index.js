@@ -661,12 +661,7 @@ app.get("/v1/account/:id", async (req, res) => {
     console.log("Invalid UUID format for user ID:", userId);
     return res.status(400).json({ error: "Invalid user ID format" });
   }
-  setTimeout(async () => {
-    await pool.query(
-      "UPDATE users SET online = $1 WHERE last_login_ip = $2",
-      [false, req.ip]
-    );
-  }, 70000);
+  
   try {
     const result = await pool.query(
       "SELECT id, nickname, username, role_perms, is_staff, is_suspended FROM users WHERE id = $1",
@@ -678,7 +673,12 @@ app.get("/v1/account/:id", async (req, res) => {
     }
 
     res.status(200).json(result.rows[0]);
-
+    setTimeout(async () => {
+      await pool.query(
+        "UPDATE users SET online = $1 WHERE last_login_ip = $2",
+        [false, req.ip]
+      );
+    }, 70000);
   } catch (error) {
     console.error("Error fetching user:", error);
     res.status(500).json({ error: "Server error" });
