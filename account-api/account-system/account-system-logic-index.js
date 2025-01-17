@@ -539,7 +539,7 @@ const ipCache = new NodeCache({ stdTTL: 86400 }); // Cache for 24 hours
 app.get("/v1/account/users", async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT id, username, nickname, role_perms, is_staff, is_suspended, signup_ip, country, region, country_code, joined_date FROM users ORDER BY username ASC"
+      "SELECT id, username, nickname, role_perms, is_staff, is_suspended, signup_ip, country, region, country_code, joined_date, totalscore FROM users ORDER BY username ASC"
     );
 
     const users = await Promise.all(result.rows.map(async (row) => {
@@ -552,8 +552,9 @@ app.get("/v1/account/users", async (req, res) => {
         suspended: row.is_suspended,
         country: row.country,
         region: row.region,
-        country_code: row.country_code ,
-        joined: row.joined_date
+        country_code: row.country_code,
+        joined: row.joined_date,
+        score: row.totalscore,
       };
     }));
 
