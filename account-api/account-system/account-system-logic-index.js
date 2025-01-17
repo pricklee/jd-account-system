@@ -632,14 +632,13 @@ app.post("/v1/account/:id/edit-user", authenticate, async (req, res) => {
 
 app.post("/v1/account/:id/stats/score", authenticate, async (req, res) => {
   const userId = req.params.id;
-  const { score } = req.body;
+  const { totalscore } = req.body;
 
-  
 
   try {
     const result = await pool.query(
       "UPDATE users SET totalscore = totalscore + $1 WHERE id = $2 RETURNING totalscore",
-      [score, userId]
+      [totalscore, userId]
     );
 
     if (result.rows.length === 0) {
