@@ -668,11 +668,10 @@ app.get("/v1/account/:id", async (req, res) => {
     return res.status(400).json({ error: "Invalid user ID format" });
   }
   try {
-    const result = await pool.query("SELECT last_login_ip FROM users WHERE id = $1", [userId]);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
+    const result = await pool.query(
+      "SELECT id, nickname, username, role_perms, is_staff, is_suspended, last_login_ip, online FROM users WHERE id = $1",
+      [userId]
+    );
     const lastLoginIp = result.rows[0].last_login_ip;
     if (userIp !== lastLoginIp) {
       return res.status(403).json({ error: "IP address mismatch" });
@@ -680,16 +679,6 @@ app.get("/v1/account/:id", async (req, res) => {
 
     userPingTimes.set(userId, Date.now());
     res.status(200).json({ message: "Ping received" });
-  } catch (error) {
-    console.error("Error during ping:", error);
-    res.status(500).json({ error: "Server error" });
-  }
-  try {
-    const result = await pool.query(
-      "SELECT id, nickname, username, role_perms, is_staff, is_suspended FROM users WHERE id = $1",
-      [userId]
-    );
-
     if (!result.rows[0]) {
       return res.status(404).json({ error: "User not found" });
     }
