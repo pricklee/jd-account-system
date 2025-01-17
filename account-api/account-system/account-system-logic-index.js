@@ -630,7 +630,7 @@ app.post("/v1/account/:id/edit-user", authenticate, async (req, res) => {
   }
 });
 
-app.post("/v1/account/:id/score", authenticate, async (req, res) => {
+app.post("/v1/account/:id/stats/score", authenticate, async (req, res) => {
   const userId = req.params.id;
   const { score } = req.body;
 
