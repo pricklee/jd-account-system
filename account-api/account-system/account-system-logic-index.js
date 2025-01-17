@@ -634,9 +634,7 @@ app.post("/v1/account/:id/stats/score", authenticate, async (req, res) => {
   const userId = req.params.id;
   const { score } = req.body;
 
-  if (typeof score !== 'number') {
-    return res.status(400).json({ error: "Score must be a number" });
-  }
+  
 
   try {
     const result = await pool.query(
