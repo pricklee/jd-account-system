@@ -405,12 +405,7 @@ app.post("/v1/account/login", verifyCaptcha, userAgentAllowList, async (req, res
       [req.ip, user.id]
     );
 
-    // Update online status
-    await pool.query(
-      "UPDATE users SET online = $1 WHERE id = $2",
-      [true, user.id]
-    )
-
+   
     console.log(`User logged in from IP: ${req.ip}`);
 
     return res.status(200).json({
@@ -673,16 +668,7 @@ app.get("/v1/account/:id", async (req, res) => {
     }
 
     res.status(200).json(result.rows[0]);
-    setTimeout(async () => {
-      try {
-      await pool.query(
-        "UPDATE users SET online = $1 WHERE id = $2",
-        [false, userId]
-      );
-      } catch (error) {
-      console.error("Error updating user online status:", error);
-      }
-    }, 65000); // 1 minute 5 seconds
+    
   } catch (error) {
     console.error("Error fetching user:", error);
     res.status(500).json({ error: "Server error" });
