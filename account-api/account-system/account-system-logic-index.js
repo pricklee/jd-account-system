@@ -676,10 +676,9 @@ app.get("/v1/account/:id", async (req, res) => {
     setTimeout(async () => {
       try {
       await pool.query(
-        "UPDATE users SET online = $1 WHERE last_login_ip = $2",
-        [false, req.ip]
+        "UPDATE users SET online = $1 WHERE id = $2",
+        [false, userId]
       );
-      console.log(`User with IP ${req.ip} set to offline`);
       } catch (error) {
       console.error("Error updating user online status:", error);
       }
