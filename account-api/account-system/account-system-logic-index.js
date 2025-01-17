@@ -590,7 +590,7 @@ app.post("/v1/account/:id/edit-user", authenticate, async (req, res) => {
   const { nickname, username, email } = req.body;
 
   if (!nickname || !username || !email) {
-    console.error("Editing ${username} failed: Missing required fields.");
+    console.error(`Editing ${username} failed: Missing required fields.`);
     return res.status(400).json({ error: "Nickname, Username, and Email are required for edit" });
   }
 
@@ -622,10 +622,35 @@ app.post("/v1/account/:id/edit-user", authenticate, async (req, res) => {
       [nickname, username, email, userId]
     );
 
-    console.log(`User ${userId} updated there account info successfully`);
+    console.log(`User ${userId} updated their account info successfully`);
     res.status(200).json({ message: "User updated successfully" });
   } catch (error) {
     console.error("Error updating user:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.post("/v1/account/:id/score", authenticate, async (req, res) => {
+  const userId = req.params.id;
+  const { score } = req.body;
+
+  if (typeof score !== 'number') {
+    return res.status(400).json({ error: "Score must be a number" });
+  }
+
+  try {
+    const result = await pool.query(
+      "UPDATE users SET totalscore = totalscore + $1 WHERE id = $2 RETURNING totalscore",
+      [score, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json({ message: "Score updated successfully", totalscore: result.rows[0].totalscore });
+  } catch (error) {
+    console.error("Error updating score:", error);
     res.status(500).json({ error: "Server error" });
   }
 });
