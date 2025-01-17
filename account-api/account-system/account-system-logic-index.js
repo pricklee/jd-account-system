@@ -405,6 +405,18 @@ app.post("/v1/account/login", verifyCaptcha, userAgentAllowList, async (req, res
       [req.ip, user.id]
     );
 
+    // Update online status
+    setTimeout(async () => {
+      await pool.query(
+        "UPDATE users SET online = $1 WHERE id = $2",
+        [false, user.id]
+      );
+    }, 30000);
+    await pool.query(
+      "UPDATE users SET online = $1 WHERE id = $2",
+      [true, user.id]
+    )
+
     console.log(`User logged in from IP: ${req.ip}`);
 
     return res.status(200).json({
@@ -650,12 +662,28 @@ app.post("/v1/account/:id/edit-user-role", authenticate, checkPermission("canEdi
 // Get user info endpoint - uses UUID
 app.get("/v1/account/:id", async (req, res) => {
   const userId = req.params.id;
-
+  const userIp = req.ip;
   if (!validateUUID(userId)) {
     console.log("Invalid UUID format for user ID:", userId);
     return res.status(400).json({ error: "Invalid user ID format" });
   }
+  try {
+    const result = await pool.query("SELECT last_login_ip FROM users WHERE id = $1", [userId]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
 
+    const lastLoginIp = result.rows[0].last_login_ip;
+    if (userIp !== lastLoginIp) {
+      return res.status(403).json({ error: "IP address mismatch" });
+    }
+
+    userPingTimes.set(userId, Date.now());
+    res.status(200).json({ message: "Ping received" });
+  } catch (error) {
+    console.error("Error during ping:", error);
+    res.status(500).json({ error: "Server error" });
+  }
   try {
     const result = await pool.query(
       "SELECT id, nickname, username, role_perms, is_staff, is_suspended FROM users WHERE id = $1",
