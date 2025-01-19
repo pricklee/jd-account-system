@@ -7,22 +7,12 @@ const os = require('os');
 const axios = require('axios');
 const { execSync } = require('child_process');
 require("dotenv").config();
-const cors = require('cors');
 const nodemailer = require("nodemailer");
 const NodeCache = require("node-cache");
 
 const app = express();
 app.use(express.json());
-app.use(cors({
-  origin: 'localhost:3000/login',
-  methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
-app.use(cors({
-  origin: 'https://game.jammerdash.com/login', // Replace with your local frontend URL
-  methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+
 app.use((req, res, next) => {
   if (req.headers['x-forwarded-proto'] !== 'https') {
     return res.redirect(`https://${req.headers.host}${req.url}`);
