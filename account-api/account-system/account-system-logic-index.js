@@ -14,7 +14,12 @@ const NodeCache = require("node-cache");
 const app = express();
 app.use(express.json());
 app.use(cors({
-  origin: 'http://localhost:3000', // Replace with your local frontend URL
+  origin: 'http://localhost:3000/login',
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+app.use(cors({
+  origin: 'https://game.jammerdash.com/login', // Replace with your local frontend URL
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
