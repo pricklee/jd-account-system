@@ -14,7 +14,7 @@ const NodeCache = require("node-cache");
 const app = express();
 app.use(express.json());
 app.use(cors({
-  origin: 'http://localhost:3000/login',
+  origin: 'localhost:3000/login',
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
