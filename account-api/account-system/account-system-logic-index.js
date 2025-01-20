@@ -586,15 +586,14 @@ app.post("/v1/account/:id/suspend", authenticate, checkPermission("canSuspendAcc
 });
 
 // Edit User
-app.post("/v1/account/:id/edit-user", authenticate, async (req, res) => {
-  const userId = req.params.id;
-  const { nickname, username, email } = req.body;
+app.post("/v1/account/edit-user", authenticate, async (req, res) => {
+  const { userId, nickname, username, email, pfpLink } = req.body;
 
   if (!nickname || !username || !email) {
     console.error(`Editing ${username} failed: Missing required fields.`);
     return res.status(400).json({ error: "Nickname, Username, and Email are required for edit" });
   }
-
+  
   const canEditOwnAccount = rolePermissions[req.user.role_perms]?.canEditOwnAccount;
   const canEditOtherAccounts = rolePermissions[req.user.role_perms]?.canEditOtherAccounts;
 
@@ -610,8 +609,8 @@ app.post("/v1/account/:id/edit-user", authenticate, async (req, res) => {
 
   try {
     const existingUser = await pool.query(
-      "SELECT * FROM user WHERE (email = $1 OR username = $2) AND id != $3",
-      [email, username, userId]
+      "SELECT * FROM users WHERE (email = $1 OR username = $2 OR pfp_link = $4) AND id != $3",
+      [email, username, userId, pfpLink]
     );
 
     if (existingUser.rows.length > 0) {
@@ -619,8 +618,8 @@ app.post("/v1/account/:id/edit-user", authenticate, async (req, res) => {
     }
 
     await pool.query(
-      "UPDATE users SET nickname = $1, username = $2, email = $3 WHERE id = $4",
-      [nickname, username, email, userId]
+      "UPDATE users SET nickname = $1, username = $2, email = $3, pfp_link = $5 WHERE id = $4",
+      [nickname, username, email, userId, pfpLink]
     );
 
     console.log(`User ${userId} updated their account info successfully`);
@@ -630,7 +629,6 @@ app.post("/v1/account/:id/edit-user", authenticate, async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
-
 app.post("/v1/account/:id/stats/score", authenticate, async (req, res) => {
   const userId = req.params.id;
   const { totalscore } = req.body;
@@ -682,7 +680,7 @@ app.get("/v1/account/:id", async (req, res) => {
   
   try {
     const result = await pool.query(
-      "SELECT id, nickname, username, role_perms, is_staff, is_suspended FROM users WHERE id = $1",
+      "SELECT id, nickname, username, role_perms, is_staff, is_suspended, pfp_link FROM users WHERE id = $1",
       [userId]
     );
 
