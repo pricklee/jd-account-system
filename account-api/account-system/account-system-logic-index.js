@@ -539,7 +539,7 @@ const ipCache = new NodeCache({ stdTTL: 86400 }); // Cache for 24 hours
 app.get("/v1/account/users", async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT id, username, nickname, role_perms, is_staff, is_suspended, signup_ip, country, region, country_code, joined_date, totalscore FROM users ORDER BY username ASC"
+      "SELECT id, username, nickname, role_perms, is_staff, is_suspended, signup_ip, country, region, country_code, joined_date, totalscore, pfp_link FROM users ORDER BY username ASC"
     );
 
     const users = await Promise.all(result.rows.map(async (row) => {
@@ -555,6 +555,7 @@ app.get("/v1/account/users", async (req, res) => {
         country_code: row.country_code,
         joined: row.joined_date,
         score: row.totalscore,
+        pfp: row.pfp_link,
       };
     }));
 
@@ -623,6 +624,7 @@ app.post("/v1/account/:id/edit-user", authenticate, async (req, res) => {
     );
 
     console.log(`User ${uuid} updated their account info successfully`);
+    console.log(`${req.body}`);
     res.status(200).json({ message: "User updated successfully" });
   } catch (error) {
     console.error("Error updating user:", error);
