@@ -587,7 +587,7 @@ app.post("/v1/account/:id/suspend", authenticate, checkPermission("canSuspendAcc
 
 // Edit User
 app.post("/v1/account/:id/edit-user", authenticate, async (req, res) => {
-  const { userId, nickname, username, email, pfpLink } = req.body;
+  const { uuid, nickname, username, email, pfpLink } = req.body;
 
   if (!nickname || !username || !email) {
     console.error(`Editing ${username} failed: Missing required fields.`);
@@ -597,12 +597,12 @@ app.post("/v1/account/:id/edit-user", authenticate, async (req, res) => {
   const canEditOwnAccount = rolePermissions[req.user.role_perms]?.canEditOwnAccount;
   const canEditOtherAccounts = rolePermissions[req.user.role_perms]?.canEditOtherAccounts;
 
-  if (req.user.id !== userId && !canEditOtherAccounts) {
+  if (req.user.id !== uuid && !canEditOtherAccounts) {
     console.error(`User ${req.user.username} does not have permission to edit another account`);
     return res.status(403).json({ error: "Access denied" });
   }
 
-  if (req.user.id === userId && !canEditOwnAccount) {
+  if (req.user.id === uuid && !canEditOwnAccount) {
     console.error(`User ${req.user.username} does not have permission to edit their own account`);
     return res.status(403).json({ error: "Access denied" });
   }
@@ -610,7 +610,7 @@ app.post("/v1/account/:id/edit-user", authenticate, async (req, res) => {
   try {
     const existingUser = await pool.query(
       "SELECT * FROM users WHERE (email = $1 OR username = $2 OR pfp_link = $4) AND id != $3",
-      [email, username, userId, pfpLink]
+      [email, username, uuid, pfpLink]
     );
 
     if (existingUser.rows.length > 0) {
@@ -619,10 +619,10 @@ app.post("/v1/account/:id/edit-user", authenticate, async (req, res) => {
 
     await pool.query(
       "UPDATE users SET nickname = $1, username = $2, email = $3, pfp_link = $5 WHERE id = $4",
-      [nickname, username, email, userId, pfpLink]
+      [nickname, username, email, uuid, pfpLink]
     );
 
-    console.log(`User ${userId} updated their account info successfully`);
+    console.log(`User ${uuid} updated their account info successfully`);
     res.status(200).json({ message: "User updated successfully" });
   } catch (error) {
     console.error("Error updating user:", error);
