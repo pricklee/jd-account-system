@@ -610,8 +610,8 @@ app.post("/v1/account/:id/edit-user", authenticate, async (req, res) => {
 
   try {
     const existingUser = await pool.query(
-      "SELECT * FROM users WHERE (email = $1 OR username = $2 OR pfp_link = $4) AND id != $3",
-      [email, username, uuid, pfpLink]
+      "SELECT * FROM users WHERE (email = $1 OR username = $2 OR pfp_link = $3) AND id != $4",
+      [email, username, pfpLink, uuid]
     );
 
     if (existingUser.rows.length > 0) {
