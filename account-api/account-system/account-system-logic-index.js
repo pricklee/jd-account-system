@@ -586,7 +586,7 @@ app.post("/v1/account/:id/suspend", authenticate, checkPermission("canSuspendAcc
 });
 
 // Edit User
-app.post("/v1/account/edit-user", authenticate, async (req, res) => {
+app.post("/v1/account/:id/edit-user", authenticate, async (req, res) => {
   const { userId, nickname, username, email, pfpLink } = req.body;
 
   if (!nickname || !username || !email) {
