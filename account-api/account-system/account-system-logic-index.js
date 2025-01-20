@@ -588,7 +588,7 @@ app.post("/v1/account/:id/suspend", authenticate, checkPermission("canSuspendAcc
 
 // Edit User
 app.post("/v1/account/:id/edit-user", authenticate, async (req, res) => {
-  const { uuid, nickname, username, email, pfpLink } = req.body;
+  const { uuid, nickname, username, email, profile_picture } = req.body;
 
   if (!nickname || !username || !email) {
     console.error(`Editing ${username} failed: Missing required fields.`);
@@ -633,9 +633,9 @@ app.post("/v1/account/:id/edit-user", authenticate, async (req, res) => {
       updateFields.push("email");
       updateValues.push(email);
     }
-    if (pfpLink) {
+    if (profile_picture) {
       updateFields.push("pfp_link");
-      updateValues.push(pfpLink);
+      updateValues.push(profile_picture);
     }
 
     if (updateFields.length === 0) {
