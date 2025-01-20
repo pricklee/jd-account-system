@@ -610,21 +610,48 @@ app.post("/v1/account/:id/edit-user", authenticate, async (req, res) => {
 
   try {
     const existingUser = await pool.query(
-      "SELECT * FROM users WHERE (email = $1 OR username = $2 OR pfp_link = $3) AND id != $4",
-      [email, username, pfpLink, uuid]
+      "SELECT * FROM users WHERE (email = $1 OR username = $2) AND id != $3",
+      [email, username, uuid]
     );
 
     if (existingUser.rows.length > 0) {
       return res.status(400).json({ error: "Username or email already exists" });
     }
 
+    const updateFields = [];
+    const updateValues = [];
+
+    if (nickname) {
+      updateFields.push("nickname");
+      updateValues.push(nickname);
+    }
+    if (username) {
+      updateFields.push("username");
+      updateValues.push(username);
+    }
+    if (email) {
+      updateFields.push("email");
+      updateValues.push(email);
+    }
+    if (pfpLink) {
+      updateFields.push("pfp_link");
+      updateValues.push(pfpLink);
+    }
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({ error: "No fields to update" });
+    }
+
+    const setClause = updateFields.map((field, index) => `${field} = $${index + 1}`).join(", ");
+    updateValues.push(uuid);
+
     await pool.query(
-      "UPDATE users SET nickname = $1, username = $2, email = $3, pfp_link = $4 WHERE id = $5",
-      [nickname, username, email, pfpLink, uuid]
+      `UPDATE users SET ${setClause} WHERE id = $${updateValues.length}`,
+      updateValues
     );
 
     console.log(`User ${uuid} updated their account info successfully`);
-    console.log(`${req.body}`);
+    console.log(`${req.body.rows[0]}`);
     res.status(200).json({ message: "User updated successfully" });
   } catch (error) {
     console.error("Error updating user:", error);
