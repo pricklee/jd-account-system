@@ -619,8 +619,8 @@ app.post("/v1/account/:id/edit-user", authenticate, async (req, res) => {
     }
 
     await pool.query(
-      "UPDATE users SET nickname = $1, username = $2, email = $3, pfp_link = $5 WHERE id = $4",
-      [nickname, username, email, uuid, pfpLink]
+      "UPDATE users SET nickname = $1, username = $2, email = $3, pfp_link = $4 WHERE id = $5",
+      [nickname, username, email, pfpLink, uuid]
     );
 
     console.log(`User ${uuid} updated their account info successfully`);
