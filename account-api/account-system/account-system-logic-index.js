@@ -651,7 +651,6 @@ app.post("/v1/account/:id/edit-user", authenticate, async (req, res) => {
     );
 
     console.log(`User ${uuid} updated their account info successfully`);
-    console.log(`${req.body.rows[0]}`);
     res.status(200).json({ message: "User updated successfully" });
   } catch (error) {
     console.error("Error updating user:", error);
