@@ -417,7 +417,8 @@ app.post("/v1/account/login", verifyCaptcha, userAgentAllowList, async (req, res
         is_staff: user.is_staff,
         country: user.country,
         region: user.region,
-        cc: user.country_code
+        cc: user.country_code,
+        totalscore: user.totalscore
       },
     });
   } catch (error) {
