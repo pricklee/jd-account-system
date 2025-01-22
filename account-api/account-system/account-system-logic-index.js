@@ -413,7 +413,7 @@ app.post("/v1/account/login", verifyCaptcha, userAgentAllowList, async (req, res
       user: {
         id: user.id,
         username: user.username,
-        nickname: user.display_name,
+        nickname: user.nickname,
         role_perms: user.role_perms,
         is_staff: user.is_staff,
         country: user.country,
