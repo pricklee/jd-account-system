@@ -7,172 +7,28 @@
     }
   ],
   "routes": [
-    {
-      "src": "/v1/account/login",
-      "dest": "account-api/account-system/account-system-logic-index.js"
-      
-    },
-    {
-      "src": "/v1/account/signup",
-      "dest": "account-api/account-system/account-system-logic-index.js",
-      "headers": {
-        "Access-Control-Allow-Origin": "game.jammerdash.com",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization"
-      }
-    },
-    {
-      "src": "/v1/account/reset-password",
-      "dest": "account-api/account-system/account-system-logic-index.js",
-      "headers": {
-        "Access-Control-Allow-Origin": "game.jammerdash.com",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization"
-      }
-    },
-    {
-      "src": "/v1/account/users",
-      "dest": "account-api/account-system/account-system-logic-index.js",
-      "headers": {
-        "Access-Control-Allow-Origin": "game.jammerdash.com",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization"
-      }
-    },
-    {
-      "src": "/v1/account/(?<id>[a-fA-F0-9-]{36})",
-      "dest": "account-api/account-system/account-system-logic-index.js",
-      "headers": {
-        "Access-Control-Allow-Origin": "game.jammerdash.com",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization"
-      }
-    },
-    {
-      "src": "/v1/account/(?<id>[a-fA-F0-9-]{36})/suspend",
-      "dest": "account-api/account-system/account-system-logic-index.js",
-      "headers": {
-        "Access-Control-Allow-Origin": "game.jammerdash.com",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization"
-      }
-    },
-    {
-      "src": "/v1/account/(?<id>[a-fA-F0-9-]{36})/edit-user",
-      "dest": "account-api/account-system/account-system-logic-index.js",
-      "headers": {
-        "Access-Control-Allow-Origin": "game.jammerdash.com",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization"
-      }
-    },
-    {
-      "src": "/v1/account/(?<id>[a-fA-F0-9-]{36})/edit-user-role",
-      "dest": "account-api/account-system/account-system-logic-index.js",
-      "headers": {
-        "Access-Control-Allow-Origin": "game.jammerdash.com",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization"
-      }
-    },
-    {
-      "src": "/v1/account/(?<id>[a-fA-F0-9-]{36})/stats",
-      "dest": "account-api/account-system/account-system-logic-index.js",
-      "headers": {
-        "Access-Control-Allow-Origin": "game.jammerdash.com",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization"
-      }
-    },
-    {
-      "src": "/v1/account/(?<id>[a-fA-F0-9-]{36})/stats/edit-stats",
-      "dest": "account-api/account-system/account-system-logic-index.js",
-      "headers": {
-        "Access-Control-Allow-Origin": "game.jammerdash.com",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization"
-      }
-    },
-    {
-      "src": "/v1/account/(?<id>[a-fA-F0-9-]{36})/stats/score",
-      "dest": "account-api/account-system/account-system-logic-index.js",
-      "headers": {
-        "Access-Control-Allow-Origin": "game.jammerdash.com",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization"
-      }
-    },
-    {
-      "src": "/v1/preview/account/login",
-      "dest": "account-api/account-system/account-system-logic-index.js",
-      "headers": {
-        "x-env": "preview",
-        "Access-Control-Allow-Origin": "game.jammerdash.com",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization"
-      }
-    },
-    {
-      "src": "/v1/preview/account/signup",
-      "dest": "account-api/account-system/account-system-logic-index.js",
-      "headers": {
-        "x-env": "preview",
-        "Access-Control-Allow-Origin": "game.jammerdash.com",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization"
-      }
-    },
-    {
-      "src": "/v1/preview/account/reset-password",
-      "dest": "account-api/account-system/account-system-logic-index.js",
-      "headers": {
-        "x-env": "preview",
-        "Access-Control-Allow-Origin": "game.jammerdash.com",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization"
-      }
-    },
-    {
-      "src": "/v1/preview/account/(?<id>[a-fA-F0-9-]{36})",
-      "dest": "account-api/account-system/account-system-logic-index.js",
-      "headers": {
-        "x-env": "preview",
-        "Access-Control-Allow-Origin": "game.jammerdash.com",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization"
-      }
-    },
-    {
-      "src": "/v1/preview/account/(?<id>[a-fA-F0-9-]{36})/suspend",
-      "dest": "account-api/account-system/account-system-logic-index.js",
-      "headers": {
-        "x-env": "preview",
-        "Access-Control-Allow-Origin": "game.jammerdash.com",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization"
-      }
-    },
-    {
-      "src": "/v1/preview/account/(?<id>[a-fA-F0-9-]{36})/edit-user",
-      "dest": "account-api/account-system/account-system-logic-index.js",
-      "headers": {
-        "x-env": "preview",
-        "Access-Control-Allow-Origin": "game.jammerdash.com",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization"
-      }
-    },
-    {
-      "src": "/v1/preview/account/(?<id>[a-fA-F0-9-]{36})/edit-user-role",
-      "dest": "account-api/account-system/account-system-logic-index.js",
-      "headers": {
-        "x-env": "preview",
-        "Access-Control-Allow-Origin": "game.jammerdash.com",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization"
-      }
-    }
+    { "src": "/v1/account/login", "dest": "account-api/account-system/account-system-logic-index.js" },
+    { "src": "/v1/account/signup", "dest": "account-api/account-system/account-system-logic-index.js" },
+    { "src": "/v1/account/reset-password", "dest": "account-api/account-system/account-system-logic-index.js" },
+    { "src": "/v1/account/users", "dest": "account-api/account-system/account-system-logic-index.js" },
+    { "src": "/v1/account/(?<id>[a-fA-F0-9-]{36})", "dest": "account-api/account-system/account-system-logic-index.js" },
+    { "src": "/v1/account/(?<id>[a-fA-F0-9-]{36})/suspend", "dest": "account-api/account-system/account-system-logic-index.js" },
+    { "src": "/v1/account/(?<id>[a-fA-F0-9-]{36})/edit-user", "dest": "account-api/account-system/account-system-logic-index.js" },
+    { "src": "/v1/account/(?<id>[a-fA-F0-9-]{36})/edit-user-role", "dest": "account-api/account-system/account-system-logic-index.js" },
+    { "src": "/v1/account/(?<id>[a-fA-F0-9-]{36})/stats", "dest": "account-api/account-system/account-system-logic-index.js" },
+    { "src": "/v1/account/(?<id>[a-fA-F0-9-]{36})/stats/edit-stats", "dest": "account-api/account-system/account-system-logic-index.js" },
+    { "src": "/v1/account/(?<id>[a-fA-F0-9-]{36})/stats/score", "dest": "account-api/account-system/account-system-logic-index.js" },
+    { "src": "/v1/preview/account/login", "dest": "account-api/account-system/account-system-logic-index.js" },
+    { "src": "/v1/preview/account/signup", "dest": "account-api/account-system/account-system-logic-index.js" },
+    { "src": "/v1/preview/account/reset-password", "dest": "account-api/account-system/account-system-logic-index.js" },
+    { "src": "/v1/preview/account/(?<id>[a-fA-F0-9-]{36})", "dest": "account-api/account-system/account-system-logic-index.js" },
+    { "src": "/v1/preview/account/(?<id>[a-fA-F0-9-]{36})/suspend", "dest": "account-api/account-system/account-system-logic-index.js" },
+    { "src": "/v1/preview/account/(?<id>[a-fA-F0-9-]{36})/edit-user", "dest": "account-api/account-system/account-system-logic-index.js" },
+    { "src": "/v1/preview/account/(?<id>[a-fA-F0-9-]{36})/edit-user-role", "dest": "account-api/account-system/account-system-logic-index.js" }
   ],
+  "headers": [
+    {
+      "source": "/v1/account/(.*)",
       "headers": [
         {
           "key": "Access-Control-Allow-Origin",
@@ -187,4 +43,27 @@
           "value": "Content-Type, Authorization"
         }
       ]
+    },
+    {
+      "source": "/v1/preview/account/(.*)",
+      "headers": [
+        {
+          "key": "x-env",
+          "value": "preview"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "https://game.jammerdash.com"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        }
+      ]
+    }
+  ]
 }
