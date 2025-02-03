@@ -9,6 +9,7 @@ const { execSync } = require('child_process');
 require("dotenv").config();
 const nodemailer = require("nodemailer");
 const NodeCache = require("node-cache");
+const cors = require("cors");
 
 const app = express();
 app.use(express.json());
