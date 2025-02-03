@@ -38,10 +38,12 @@ app.use(cors({
       // Allow requests from the game client (or other trusted sources)
       if (!origin || origin === 'https://game.jammerdash.com') {
           callback(null, true);
+          
       } else {
           callback(new Error('Not allowed by CORS'), false);
       }
   },
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
 }));
 
