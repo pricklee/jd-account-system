@@ -13,20 +13,23 @@ import cors from "cors";
 
 const app = express();
 app.use(express.json());
-app.use(
-  cors({
-      origin: "https://game.jammerdash.com",
-      methods: ["GET", "POST", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
-app.options('*', cors());
+const corsOptions = {
+  origin: 'https://game.jammerdash.com',
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
 app.use((req, res, next) => {
   if (req.headers['x-forwarded-proto'] !== 'https') {
     return res.redirect(`https://${req.headers.host}${req.url}`);
   }
   next();
 });
+app.options('*', cors(corsOptions)); 
+
+
+
 // Email configuration 
 const transporter = nodemailer.createTransport({
   host: "smtp.zoho.com",
