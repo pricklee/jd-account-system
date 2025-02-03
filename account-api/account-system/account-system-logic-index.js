@@ -32,6 +32,19 @@ const transporter = nodemailer.createTransport({
 // Trust proxy settings
 app.set('trust proxy', true);
 
+app.use(cors({
+  origin: function (origin, callback) {
+      // Allow requests from the game client (or other trusted sources)
+      if (!origin || origin === 'https://game.jammerdash.com') {
+          callback(null, true);
+      } else {
+          callback(new Error('Not allowed by CORS'), false);
+      }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+}));
+
+
 // IP Logging
 app.use((req, res, next) => {
   req.clientIp = (
