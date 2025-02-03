@@ -81,45 +81,5 @@
       "src": "/v1/preview/account/(?<id>[a-fA-F0-9-]{36})/edit-user-role",
       "dest": "account-api/account-system/account-system-logic-index.js"
     }
-  ],
-  "headers": [
-    {
-      "source": "/v1/account/(.*)",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "https://game.jammerdash.com"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, OPTIONS"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization"
-        }
-      ]
-    },
-    {
-      "source": "/v1/preview/account/(.*)",
-      "headers": [
-        {
-          "key": "x-env",
-          "value": "preview"
-        },
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "https://game.jammerdash.com"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, OPTIONS"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization"
-        }
-      ]
-    }
   ]
 }
