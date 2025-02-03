@@ -20,6 +20,7 @@ app.use(
       allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+app.options('*', cors());
 app.use((req, res, next) => {
   if (req.headers['x-forwarded-proto'] !== 'https') {
     return res.redirect(`https://${req.headers.host}${req.url}`);
@@ -38,6 +39,10 @@ const transporter = nodemailer.createTransport({
 });
 // Trust proxy settings
 app.set('trust proxy', true);
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send('Something went wrong!');
+});
 
 // IP Logging
 app.use((req, res, next) => {
