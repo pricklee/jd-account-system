@@ -321,8 +321,7 @@ const verifyCaptcha = async (req, res, next) => {
     const requestBody = {
       event: {
         token: captchaResponse,
-        siteKey: "6LeEossqAAAAALX62XSAtP7dLWpcchdvx4eWXJzU",
-        action: 'SIGNUP',
+        siteKey: "6LeEossqAAAAALX62XSAtP7dLWpcchdvx4eWXJzU"
       }
     };
     
