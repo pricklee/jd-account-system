@@ -317,7 +317,7 @@ const verifyCaptcha = async (req, res, next) => {
       event: {
         token: captchaResponse,
         siteKey: "6LeEossqAAAAALX62XSAtP7dLWpcchdvx4eWXJzU", 
-        action: 'LOGIN',
+        action: 'SIGNUP',
       }
     };
     
