@@ -4,7 +4,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require('crypto');
 const os = require('os');
-const axios = require('axios');
+import axios from 'axios';
 const { execSync } = require('child_process');
 require("dotenv").config();
 const nodemailer = require("nodemailer");
