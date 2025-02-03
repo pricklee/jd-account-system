@@ -330,7 +330,7 @@ const verifyCaptcha = async (req, res, next) => {
   
     // Log the response data
     console.log("reCAPTCHA response:", response.data);
-  
+   
     if (response.data.tokenProperties.valid) {
       return next();
     } else {
