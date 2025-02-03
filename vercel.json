@@ -173,7 +173,6 @@
       }
     }
   ],
-  "source": "/v1/account/(.*)",
       "headers": [
         {
           "key": "Access-Control-Allow-Origin",
