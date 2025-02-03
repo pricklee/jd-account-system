@@ -9,12 +9,8 @@
   "routes": [
     {
       "src": "/v1/account/login",
-      "dest": "account-api/account-system/account-system-logic-index.js",
-      "headers": {
-        "Access-Control-Allow-Origin": "game.jammerdash.com",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization"
-      }
+      "dest": "account-api/account-system/account-system-logic-index.js"
+      
     },
     {
       "src": "/v1/account/signup",
@@ -176,5 +172,20 @@
         "Access-Control-Allow-Headers": "Content-Type, Authorization"
       }
     }
-  ]
+  ],
+  "source": "/v1/account/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "https://game.jammerdash.com"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        }
+      ]
 }
