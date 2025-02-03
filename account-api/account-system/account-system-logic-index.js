@@ -311,31 +311,26 @@ const verifyCaptcha = async (req, res, next) => {
   }
 
   try {
-    // Send the request to reCAPTCHA Enterprise API for verification
-    const response = await axios.post(
-      `https://recaptchaenterprise.googleapis.com/v1beta1/projects/${process.env.RECAPTCHA_PROJECT_ID}/assessments?key=${process.env.RECAPTCHA_API_KEY}`,
-      {
-        event: {
-          token: captchaResponse,
-          siteKey: process.env.RECAPTCHA_SITE_KEY, // Your Site Key
-          action: 'LOGIN',  // The action (e.g., 'LOGIN' or 'SIGNUP')
-        }
+    const apiUrl = `https://recaptchaenterprise.googleapis.com/v1beta1/projects/${process.env.RECAPTCHA_PROJECT_ID}/assessments?key=${process.env.RECAPTCHA_API_KEY}`;
+    
+    const requestBody = {
+      event: {
+        token: captchaResponse,
+        siteKey: process.env.RECAPTCHA_SITE_KEY, 
+        action: 'LOGIN',
       }
-    );
+    };
+    
+    const response = await axios.post(apiUrl, requestBody);
 
-    // Check if the verification was successful
-    const score = response.data.tokenProperties.score;
-    const action = response.data.tokenProperties.action;
-
-    // Assuming a threshold score of 0.5 (You can adjust this as per your needs)
-    if (score >= 0.5 && action === 'LOGIN') {
-      next(); // CAPTCHA verified successfully
+    if (response.data.tokenProperties.valid) {
+      return next();
     } else {
       return res.status(400).json({ error: "CAPTCHA verification failed" });
     }
   } catch (error) {
     console.error("CAPTCHA verification error:", error);
-    return res.status(500).json({ error: "Server error" });
+    return res.status(500).json({ error: "Server error during CAPTCHA verification" });
   }
 };
 
