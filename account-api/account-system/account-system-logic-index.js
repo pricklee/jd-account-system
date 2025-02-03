@@ -367,7 +367,7 @@ function validateUUID(uuid) {
 
 // Routes
 // Login endpoint - uses username/password
-app.post("/v1/account/login", verifyCaptcha, userAgentAllowList, async (req, res) => {
+app.post("/v1/account/login", userAgentAllowList, async (req, res) => {
   console.log("Login attempt - Request body:", req.body);
 
   const { username, password } = req.body;
