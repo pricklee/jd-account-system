@@ -312,11 +312,11 @@ const verifyCaptcha = async (req, res, next) => {
 
   try {
     // Log important details
-    console.log("API URL:", `https://recaptchaenterprise.googleapis.com/v1beta1/projects/${process.env.RECAPTCHA_PROJECT_ID}/assessments?key=${process.env.RECAPTCHA_API_KEY}`);
+    console.log("API URL:", `https://recaptchaenterprise.googleapis.com/v1/projects/${process.env.RECAPTCHA_PROJECT_ID}/assessments?key=${process.env.RECAPTCHA_API_KEY}`);
     console.log("captchaResponse:", captchaResponse);
     console.log("Site Key:", "6LeEossqAAAAALX62XSAtP7dLWpcchdvx4eWXJzU");
   
-    const apiUrl = `https://recaptchaenterprise.googleapis.com/v1beta1/projects/${process.env.RECAPTCHA_PROJECT_ID}/assessments?key=${process.env.RECAPTCHA_API_KEY}`;
+    const apiUrl = `https://recaptchaenterprise.googleapis.com/v1/projects/${process.env.RECAPTCHA_PROJECT_ID}/assessments?key=${process.env.RECAPTCHA_API_KEY}`;
     
     const requestBody = {
       event: {
