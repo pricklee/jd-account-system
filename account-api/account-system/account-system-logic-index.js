@@ -8,10 +8,18 @@ const axios = require('axios');
 const { execSync } = require('child_process');
 require("dotenv").config();
 const nodemailer = require("nodemailer");
+const NodeCache = require("node-cache");
+const cors = require("cors");
 
 const app = express();
 app.use(express.json());
 
+app.use((req, res, next) => {
+  if (req.headers['x-forwarded-proto'] !== 'https') {
+    return res.redirect(`https://${req.headers.host}${req.url}`);
+  }
+  next();
+});
 // Email configuration 
 const transporter = nodemailer.createTransport({
   host: "smtp.zoho.com",
@@ -24,6 +32,21 @@ const transporter = nodemailer.createTransport({
 });
 // Trust proxy settings
 app.set('trust proxy', true);
+
+app.use(cors({
+  origin: function (origin, callback) {
+      // Allow requests from the game client (or other trusted sources)
+      if (!origin || origin === 'https://game.jammerdash.com') {
+          callback(null, true);
+          
+      } else {
+          callback(new Error('Not allowed by CORS'), false);
+      }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+}));
+
 
 // IP Logging
 app.use((req, res, next) => {
@@ -273,10 +296,6 @@ const userAgentAllowList = (req, res, next) => {
 // Rate limit for account creation
 const Redis = require(`ioredis`);
 const redis = new Redis(process.env.REDIS_URL);
-const axios = require('axios');
-
-
-app.use(limiter);
 
 const RATE_LIMIT_WINDOW = 30 * 24 * 60 * 60; // 30 days
 const DAILY_LIMIT= 2 // 2 accounts per day
@@ -284,32 +303,56 @@ const DAILY_LIMIT= 2 // 2 accounts per day
 // CAPTCHA Verification Middleware
 const verifyCaptcha = async (req, res, next) => {
   const captchaResponse = req.body.captchaResponse;
-  if (!captchaResponse) { 
+  if (!captchaResponse && req.headers['user-agent'] != process.env.CAPTCHA_SKIP_UA) {
     return res.status(400).json({ error: "CAPTCHA is required" });
+  }
+  else if (!captchaResponse && req.headers['user-agent'] === process.env.CAPTCHA_SKIP_UA) {
+    return next(); // Skip CAPTCHA verification if request is from the game client
   }
 
   try {
-    const response = await axios.post(`https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${captchaResponse}`);
-    if (response.data.success) {
-      next(); 
+    // Log important details
+    console.log("API URL:", `https://recaptchaenterprise.googleapis.com/v1/projects/${process.env.RECAPTCHA_PROJECT_ID}/assessments?key=${process.env.RECAPTCHA_API_KEY}`);
+    console.log("captchaResponse:", captchaResponse);
+    console.log("Site Key:", "6LeEossqAAAAALX62XSAtP7dLWpcchdvx4eWXJzU");
+  
+    const apiUrl = `https://recaptchaenterprise.googleapis.com/v1/projects/${process.env.RECAPTCHA_PROJECT_ID}/assessments?key=${process.env.RECAPTCHA_API_KEY}`;
+    
+    const requestBody = {
+      event: {
+        token: captchaResponse,
+        siteKey: "6LeEossqAAAAALX62XSAtP7dLWpcchdvx4eWXJzU"
+      }
+    };
+    
+    // Send the request to Google's reCAPTCHA Enterprise API
+    const response = await axios.post(apiUrl, requestBody);
+  
+    // Log the response data
+    console.log("reCAPTCHA response:", response.data);
+   
+    if (response.data.tokenProperties.valid) {
+      return next();
     } else {
       return res.status(400).json({ error: "CAPTCHA verification failed" });
     }
   } catch (error) {
-    console.error("CAPTCHA verification error:", error);
-    return res.status(500).json({ error: "Server error" });
+    // Log the detailed error message
+    console.error("CAPTCHA verification error:", error.response ? error.response.data : error.message);
+    return res.status(500).json({ error: "Server error during CAPTCHA verification" });
   }
-};
-const whiteList = process.env.WHITELIST_IPS ? process.env.WHITELIST_IPS.split(',') : [];
+};  
 
 const rateLimitSignup = async (req, res, next) => {
-  const ip = req.clientIp;
+  const ip = req.ip;
   const currentTime = Date.now();
   const today = new Date().toISOString().split('T')[0];
 
-if (whiteList.includes(ip)) {
-  return next();
-}
+  const ipWhitelist = process.env.IP_WHITELIST ? process.env.IP_WHITELIST.split(',') : [];
+
+  if (ipWhitelist.includes(ip)) {
+    return next(); // Bypass rate limit for whitelisted IPs
+  }
 
   try {
     const dailyCountKey = `${ip}:${today}`;
@@ -325,8 +368,6 @@ if (whiteList.includes(ip)) {
     }
 
     if (dailyCount && dailyCount >= DAILY_LIMIT) {
-      await redis.set(totalCountKey, currentTime);
-      await redis.expire(totalCountKey, RATE_LIMIT_WINDOW);
       return res.status(429).json({ error: "Daily account creation limit exceeded" });
     }
 
@@ -335,7 +376,7 @@ if (whiteList.includes(ip)) {
 
     next();
   } catch (error) {
-    console.error(' Rate limit error:', error);
+    console.error('Rate limit error:', error);
     return res.status(500).json({ error: "Server error" });
   }
 };
@@ -348,7 +389,7 @@ function validateUUID(uuid) {
 
 // Routes
 // Login endpoint - uses username/password
-app.post("/v1/account/login", verifyCaptcha, userAgentAllowList, async (req, res) => {
+app.post("/v1/account/login", userAgentAllowList, async (req, res) => {
   console.log("Login attempt - Request body:", req.body);
 
   const { username, password } = req.body;
@@ -397,20 +438,24 @@ app.post("/v1/account/login", verifyCaptcha, userAgentAllowList, async (req, res
     // Update last login IP
     await pool.query(
       "UPDATE users SET last_login_ip = $1 WHERE id = $2",
-      [req.clientIp, user.id]
+      [req.ip, user.id]
     );
 
-    console.log(`User logged in from IP: ${req.clientIp}`);
+   
+    console.log(`User logged in from IP: ${req.ip}`);
 
     return res.status(200).json({
       token,
       user: {
         id: user.id,
         username: user.username,
+        nickname: user.nickname,
         role_perms: user.role_perms,
         is_staff: user.is_staff,
-        signup_ip: user.signup_ip,
-        last_login_ip: user.last_login_ip
+        country: user.country,
+        region: user.region,
+        cc: user.country_code,
+        totalscore: user.totalscore
       },
     });
   } catch (error) {
@@ -475,12 +520,15 @@ app.post("/v1/account/signup", verifyCaptcha, userAgentAllowList, rateLimitSignu
     const bcryptHashedPassword = await bcrypt.hash(password, salt);
 
     // Insert the new user into the database
-    const result = await pool.query(
-      "INSERT INTO users (nickname, username, email, password, signup_ip) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-      [nickname, username, email, bcryptHashedPassword, req.clientIp]
-    );
+    const location = await getCountryFromIP(req.ip);
 
-    console.log(`New signup from IP: ${req.clientIp}`);
+    const joinedDate = new Date().toISOString().replace('T', ' ').replace(/\..+/, '');
+    const result = await pool.query(
+      "INSERT INTO users (nickname, username, email, password, signup_ip, country_code, country, region, joined_date) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *",
+      [nickname, username, email, bcryptHashedPassword, req.ip, location.countryCode, location.country, location.region, joinedDate]
+    );
+    
+    console.log(`New signup from IP: ${req.ip}`);
     
     
     app.get("/v1/account/verify-email", async (req, res) => {
@@ -522,28 +570,17 @@ app.post("/v1/account/signup", verifyCaptcha, userAgentAllowList, rateLimitSignu
 
 
 
-// UUID list endpoint
-const getCountryFromIP = async (ip) => {
-  try {
-    const response = await axios.get(`https://ipapi.co/${ip}/json/`);
-    return {
-      country: response.data.country_name,
-      region: response.data.region
-    };
-  } catch (error) {
-    console.error("Error fetching country from IP:", error);
-    return { country: "Unknown", region: "Unknown" };
-  }
-};
+const ipCache = new NodeCache({ stdTTL: 86400 }); // Cache for 24 hours
+
+
 
 app.get("/v1/account/users", async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT id, username, nickname, role_perms, is_staff, is_suspended, signup_ip FROM users ORDER BY username ASC"
+      "SELECT id, username, nickname, role_perms, is_staff, is_suspended, signup_ip, country, region, country_code, joined_date, totalscore, pfp_link FROM users ORDER BY username ASC"
     );
 
     const users = await Promise.all(result.rows.map(async (row) => {
-      const location = await getCountryFromIP(row.signup_ip);
       return {
         uuid: row.id,
         display_name: row.nickname,
@@ -551,8 +588,12 @@ app.get("/v1/account/users", async (req, res) => {
         role: row.role_perms,
         staff: row.is_staff,
         suspended: row.is_suspended,
-        country: location.country,
-        region: location.region
+        country: row.country,
+        region: row.region,
+        country_code: row.country_code,
+        joined: row.joined_date,
+        score: row.totalscore,
+        pfp: row.pfp_link,
       };
     }));
 
@@ -585,46 +626,93 @@ app.post("/v1/account/:id/suspend", authenticate, checkPermission("canSuspendAcc
 
 // Edit User
 app.post("/v1/account/:id/edit-user", authenticate, async (req, res) => {
-  const userId = req.params.id;
-  const { nickname, username, email } = req.body;
+  const { uuid, nickname, username, email, profile_picture } = req.body;
 
   if (!nickname || !username || !email) {
-    console.error("Editing ${username} failed: Missing required fields.");
+    console.error(`Editing ${username} failed: Missing required fields.`);
     return res.status(400).json({ error: "Nickname, Username, and Email are required for edit" });
   }
-
+  
   const canEditOwnAccount = rolePermissions[req.user.role_perms]?.canEditOwnAccount;
   const canEditOtherAccounts = rolePermissions[req.user.role_perms]?.canEditOtherAccounts;
 
-  if (req.user.id !== userId && !canEditOtherAccounts) {
+  if (req.user.id !== uuid && !canEditOtherAccounts) {
     console.error(`User ${req.user.username} does not have permission to edit another account`);
     return res.status(403).json({ error: "Access denied" });
   }
 
-  if (req.user.id === userId && !canEditOwnAccount) {
+  if (req.user.id === uuid && !canEditOwnAccount) {
     console.error(`User ${req.user.username} does not have permission to edit their own account`);
     return res.status(403).json({ error: "Access denied" });
   }
 
   try {
     const existingUser = await pool.query(
-      "SELECT * FROM user WHERE (email = $1 OR username = $2) AND id != $3",
-      [email, username, userId]
+      "SELECT * FROM users WHERE (email = $1 OR username = $2) AND id != $3",
+      [email, username, uuid]
     );
 
     if (existingUser.rows.length > 0) {
       return res.status(400).json({ error: "Username or email already exists" });
     }
 
+    const updateFields = [];
+    const updateValues = [];
+
+    if (nickname) {
+      updateFields.push("nickname");
+      updateValues.push(nickname);
+    }
+    if (username) {
+      updateFields.push("username");
+      updateValues.push(username);
+    }
+    if (email) {
+      updateFields.push("email");
+      updateValues.push(email);
+    }
+    if (profile_picture) {
+      updateFields.push("pfp_link");
+      updateValues.push(profile_picture);
+    }
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({ error: "No fields to update" });
+    }
+
+    const setClause = updateFields.map((field, index) => `${field} = $${index + 1}`).join(", ");
+    updateValues.push(uuid);
+
     await pool.query(
-      "UPDATE users SET nickname = $1, username = $2, email = $3 WHERE id = $4",
-      [nickname, username, email, userId]
+      `UPDATE users SET ${setClause} WHERE id = $${updateValues.length}`,
+      updateValues
     );
 
-    console.log(`User ${userId} updated there account info successfully`);
+    console.log(`User ${uuid} updated their account info successfully`);
     res.status(200).json({ message: "User updated successfully" });
   } catch (error) {
     console.error("Error updating user:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+app.post("/v1/account/:id/stats/score", authenticate, async (req, res) => {
+  const userId = req.params.id;
+  const { totalscore } = req.body;
+
+
+  try {
+    const result = await pool.query(
+      "UPDATE users SET totalscore = totalscore + $1 WHERE id = $2 RETURNING totalscore",
+      [totalscore, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json({ message: "Score updated successfully", totalscore: result.rows[0].totalscore });
+  } catch (error) {
+    console.error("Error updating score:", error);
     res.status(500).json({ error: "Server error" });
   }
 });
@@ -655,10 +743,10 @@ app.get("/v1/account/:id", async (req, res) => {
     console.log("Invalid UUID format for user ID:", userId);
     return res.status(400).json({ error: "Invalid user ID format" });
   }
-
+  
   try {
     const result = await pool.query(
-      "SELECT id, nickname, username, role_perms, is_staff, is_suspended FROM users WHERE id = $1",
+      "SELECT id, nickname, username, role_perms, is_staff, is_suspended, pfp_link FROM users WHERE id = $1",
       [userId]
     );
 
@@ -667,7 +755,7 @@ app.get("/v1/account/:id", async (req, res) => {
     }
 
     res.status(200).json(result.rows[0]);
-
+    
   } catch (error) {
     console.error("Error fetching user:", error);
     res.status(500).json({ error: "Server error" });
@@ -693,7 +781,29 @@ app.get("/v1/account/:id/stats/edit-stats", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+const getCountryFromIP = async (ip) => {
+  const cachedData = ipCache.get(ip);
+  if (cachedData) {
+    return cachedData;
+  }
 
+  try {
+    const response = await axios.get(`https://ipapi.co/${ip}/json/`);
+    const locationData = {
+      country: response.data.country_name,
+      region: response.data.region,
+      countryCode: response.data.country_code
+    };
+    ipCache.set(ip, locationData);
+    return locationData;
+    
+    ipCache.set(ip, locationData);
+    return locationData;
+  } catch (error) {
+    console.error("Error fetching country from IP:", error);
+    return { country: "Unknown", region: "Unknown" };
+  }
+};
 // Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
