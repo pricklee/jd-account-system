@@ -303,7 +303,7 @@ const DAILY_LIMIT= 2 // 2 accounts per day
 // CAPTCHA Verification Middleware
 const verifyCaptcha = async (req, res, next) => {
   const captchaResponse = req.body.captchaResponse;
-  if (!captchaResponse && req.headers['user-agent'] != process.env.CAPTCHA_SKIP_UA) { 
+  if (!captchaResponse && req.headers['user-agent'] != process.env.CAPTCHA_SKIP_UA) {
     return res.status(400).json({ error: "CAPTCHA is required" });
   }
   else if (!captchaResponse && req.headers['user-agent'] === process.env.CAPTCHA_SKIP_UA) {
@@ -311,9 +311,25 @@ const verifyCaptcha = async (req, res, next) => {
   }
 
   try {
-    const response = await axios.post(`https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${captchaResponse}`);
-    if (response.data.success) {
-      next(); 
+    // Send the request to reCAPTCHA Enterprise API for verification
+    const response = await axios.post(
+      `https://recaptchaenterprise.googleapis.com/v1beta1/projects/${process.env.RECAPTCHA_PROJECT_ID}/assessments?key=${process.env.RECAPTCHA_API_KEY}`,
+      {
+        event: {
+          token: captchaResponse,
+          siteKey: process.env.RECAPTCHA_SITE_KEY, // Your Site Key
+          action: 'LOGIN',  // The action (e.g., 'LOGIN' or 'SIGNUP')
+        }
+      }
+    );
+
+    // Check if the verification was successful
+    const score = response.data.tokenProperties.score;
+    const action = response.data.tokenProperties.action;
+
+    // Assuming a threshold score of 0.5 (You can adjust this as per your needs)
+    if (score >= 0.5 && action === 'LOGIN') {
+      next(); // CAPTCHA verified successfully
     } else {
       return res.status(400).json({ error: "CAPTCHA verification failed" });
     }
