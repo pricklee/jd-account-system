@@ -311,28 +311,38 @@ const verifyCaptcha = async (req, res, next) => {
   }
 
   try {
+    // Log important details
+    console.log("API URL:", `https://recaptchaenterprise.googleapis.com/v1beta1/projects/${process.env.RECAPTCHA_PROJECT_ID}/assessments?key=${process.env.RECAPTCHA_API_KEY}`);
+    console.log("captchaResponse:", captchaResponse);
+    console.log("Site Key:", "6LeEossqAAAAALX62XSAtP7dLWpcchdvx4eWXJzU");
+  
     const apiUrl = `https://recaptchaenterprise.googleapis.com/v1beta1/projects/${process.env.RECAPTCHA_PROJECT_ID}/assessments?key=${process.env.RECAPTCHA_API_KEY}`;
     
     const requestBody = {
       event: {
         token: captchaResponse,
-        siteKey: "6LeEossqAAAAALX62XSAtP7dLWpcchdvx4eWXJzU", 
+        siteKey: "6LeEossqAAAAALX62XSAtP7dLWpcchdvx4eWXJzU",
         action: 'SIGNUP',
       }
     };
     
+    // Send the request to Google's reCAPTCHA Enterprise API
     const response = await axios.post(apiUrl, requestBody);
-
+  
+    // Log the response data
+    console.log("reCAPTCHA response:", response.data);
+  
     if (response.data.tokenProperties.valid) {
       return next();
     } else {
       return res.status(400).json({ error: "CAPTCHA verification failed" });
     }
   } catch (error) {
-    console.error("CAPTCHA verification error:", error);
+    // Log the detailed error message
+    console.error("CAPTCHA verification error:", error.response ? error.response.data : error.message);
     return res.status(500).json({ error: "Server error during CAPTCHA verification" });
   }
-};
+};  
 
 const rateLimitSignup = async (req, res, next) => {
   const ip = req.ip;
