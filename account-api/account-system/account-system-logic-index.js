@@ -15,7 +15,7 @@ const app = express();
 app.use(express.json());
 const corsOptions = {
   origin: 'https://game.jammerdash.com',
-  methods: ['GET', 'POST', 'OPTIONS'],
+  methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 };
 
