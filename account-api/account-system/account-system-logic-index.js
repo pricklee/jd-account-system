@@ -4,7 +4,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require('crypto');
 const os = require('os');
-import axios from 'axios';
+const axios = require('axios');
 const { execSync } = require('child_process');
 require("dotenv").config();
 const nodemailer = require("nodemailer");
@@ -13,23 +13,19 @@ import cors from "cors";
 
 const app = express();
 app.use(express.json());
-const corsOptions = {
-  origin: 'https://game.jammerdash.com',
-  methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-};
-
-app.use(cors(corsOptions));
+app.use(
+    cors({
+        origin: "https://game.jammerdash.com",
+        methods: ["GET", "POST", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization"],
+    })
+);
 app.use((req, res, next) => {
   if (req.headers['x-forwarded-proto'] !== 'https') {
     return res.redirect(`https://${req.headers.host}${req.url}`);
   }
   next();
 });
-app.options('*', cors(corsOptions)); 
-
-
-
 // Email configuration 
 const transporter = nodemailer.createTransport({
   host: "smtp.zoho.com",
@@ -42,10 +38,6 @@ const transporter = nodemailer.createTransport({
 });
 // Trust proxy settings
 app.set('trust proxy', true);
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).send('Something went wrong!');
-});
 
 // IP Logging
 app.use((req, res, next) => {
