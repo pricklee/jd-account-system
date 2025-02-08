@@ -36,7 +36,7 @@ app.set('trust proxy', true);
 app.use(cors({
   origin: function (origin, callback) {
       // Allow requests from the game client (or other trusted sources)
-      if (!origin || origin === 'https://game.jammerdash.com') {
+      if (!origin || origin === 'https://game.jammerdash.com' || origin === 'https://jammerdash.com') {
           callback(null, true);
           
       } else {
@@ -48,21 +48,13 @@ app.use(cors({
 }));
 
 
-// IP Logging
+// IP Logging Middleware
 app.use((req, res, next) => {
-  req.clientIp = (
-    req.connection?.remoteAddress ||
-    req.socket?.remoteAddress ||
-    req.ip ||
-    'unknown'
-  ).replace(/^::ffff:/, '');
+  req.clientIp = (req.ip || 'unknown').replace(/^::ffff:/, '');
 
-  // Debug logging
   console.log('IP Debug:', {
-    connectionIp: req.connection?.remoteAddress,
-    socketIp: req.socket?.remoteAddress,
-    expressIp: req.ip,
-    finalIp: req.clientIp
+    rawIp: req.ip,         
+    clientIp: req.clientIp
   });
 
   next();
