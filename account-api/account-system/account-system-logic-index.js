@@ -282,24 +282,7 @@ const RATE_LIMIT_WINDOW = 30 * 24 * 60 * 60; // 30 days
 const DAILY_LIMIT= 2 // 2 accounts per day
 
 // CAPTCHA Verification Middleware
-const verifyCaptcha = async (req, res, next) => {
-  const captchaResponse = req.body.captchaResponse;
-  if (!captchaResponse) { 
-    return res.status(400).json({ error: "CAPTCHA is required" });
-  }
 
-  try {
-    const response = await axios.post(`https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${captchaResponse}`);
-    if (response.data.success) {
-      next(); 
-    } else {
-      return res.status(400).json({ error: "CAPTCHA verification failed" });
-    }
-  } catch (error) {
-    console.error("CAPTCHA verification error:", error);
-    return res.status(500).json({ error: "Server error" });
-  }
-};
 const whiteList = process.env.WHITELIST_IPS ? process.env.WHITELIST_IPS.split(',') : [];
 
 const rateLimitSignup = async (req, res, next) => {
@@ -348,7 +331,7 @@ function validateUUID(uuid) {
 
 // Routes
 // Login endpoint - uses username/password
-app.post("/v1/account/login", verifyCaptcha, userAgentAllowList, async (req, res) => {
+app.post("/v1/account/login", userAgentAllowList, async (req, res) => {
   console.log("Login attempt - Request body:", req.body);
 
   const { username, password } = req.body;
@@ -420,7 +403,7 @@ app.post("/v1/account/login", verifyCaptcha, userAgentAllowList, async (req, res
 });
 
 // Signup
-app.post("/v1/account/signup", verifyCaptcha, userAgentAllowList, rateLimitSignup, async (req, res) => {
+app.post("/v1/account/signup", userAgentAllowList, rateLimitSignup, async (req, res) => {
 
   const { nickname, username, email, password } = req.body;
 
