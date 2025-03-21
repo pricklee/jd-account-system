@@ -774,14 +774,28 @@ app.get("/v1/account/:id/stats", async (req, res) => {
 
 // Fetches user data for search purposes
 app.get("/v1/account/profile", async (req, res) => {
-    const { username } = req.query;
-    if (!username) return res.status(400).json({ error: "Username is required." });
+    const { uuid, username } = req.query;
 
-    console.log("Fetching user profile for username:", username);
+    if (!uuid && !username) {
+        return res.status(400).json({ error: "UUID or Username is required." });
+    }
 
     try {
-        const user = await db.findUserByUsername(username);
-        if (!user) return res.status(400).json({ error: "User not found." });
+        let user;
+        if (uuid) {
+            if (isValidUUID(uuid)) {
+                return res.status(400).json({ error: "Invalid UUID format." })
+            }
+            console.log(`Fetching user profile by UUID: ${uuid}`);
+            user = await db.findUserByUUID(uuid);
+        } else if (username) {
+            console.log(`Fetching user profile by Username: ${username}`);
+            user = await db.findUserByUsername(username);
+        }
+
+        if (!user) {
+            return res.status(400).json({ error: "User not found" });
+        }
 
         res.json({
             uuid: user.id,
@@ -798,7 +812,7 @@ app.get("/v1/account/profile", async (req, res) => {
             pfp: user.pfp_link,
         });
     } catch (error) {
-        console.error("Error fetching user profile:", error);
+        console.error("Error fetching user profile:" error);
         res.status(500).json({ error: "Internal server error." });
     }
 });
