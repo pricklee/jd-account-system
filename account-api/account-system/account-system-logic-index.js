@@ -812,7 +812,7 @@ app.get("/v1/account/profile", async (req, res) => {
             pfp: user.pfp_link,
         });
     } catch (error) {
-        console.error("Error fetching user profile:" error);
+        console.error("Error fetching user profile:", error);
         res.status(500).json({ error: "Internal server error." });
     }
 });
