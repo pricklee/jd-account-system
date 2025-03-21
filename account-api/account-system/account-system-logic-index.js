@@ -773,27 +773,32 @@ app.get("/v1/account/:id/stats", async (req, res) => {
 });
 
 // Fetches user data for search purposes
-app.get("/v1/account/profile"), async (req, res) => {
+app.get("/v1/account/profile", async (req, res) => {
     const { username } = req.query;
-    const {!username} return res.status(400).json({ error: "Username is required." });
+    if (!username) return res.status(400).json({ error: "Username is required." });
 
-    const user = await db.findUserByUsername(username);
-    if (!user) return res.status(400).json({ "User not found." });
+    try {
+        const user = await db.findUserByUsername(username);
+        if (!user) return res.status(400).json({ error: "User not found." });
 
-    res.json({
-        uuid: row.id,
-        display_name: row.nickname,
-        username: row.username,
-        role: row.role_perms,
-        staff: row.is_staff,
-        suspended: row.is_suspended,
-        country: row.country,
-        region: row.region,
-        country_code: row.country_code,
-        joined: row.joined_date,
-        score: row.totalscore,
-        pfp: row.pfp_link,
-    });
+        res.json({
+            uuid: user.id,
+            display_name: user.nickname,
+            username: user.username,
+            role: user.role_perms,
+            staff: user.is_staff,
+            suspended: user.is_suspended,
+            country: user.country,
+            region: user.region,
+            country_code: user.country_code,
+            joined: user.joined_date,
+            score: user.totalscore,
+            pfp: user.pfp_link,
+        });
+    } catch (error) {
+        console.error("Error fetching user profile:", error);
+        res.status(500).json({ error: "Internal server error." });
+    }
 });
 
 // Edit user stats enpoint - uses UUID - only for the game to edit stats
