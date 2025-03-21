@@ -777,6 +777,8 @@ app.get("/v1/account/profile", async (req, res) => {
     const { username } = req.query;
     if (!username) return res.status(400).json({ error: "Username is required." });
 
+    console.log("Fetching user profile for username:", username);
+
     try {
         const user = await db.findUserByUsername(username);
         if (!user) return res.status(400).json({ error: "User not found." });
