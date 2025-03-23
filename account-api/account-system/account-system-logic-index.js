@@ -297,52 +297,18 @@ const userAgentAllowList = (req, res, next) => {
 const Redis = require(`ioredis`);
 const redis = new Redis(process.env.REDIS_URL);
 
+redis.on("error", (err) => {
+  console.error("Redis error:", err);
+});
+
+redis.on("Reconnecting", () => {
+  console.log("Reconnecting to Redis...");
+})
+
 const RATE_LIMIT_WINDOW = 30 * 24 * 60 * 60; // 30 days
 const DAILY_LIMIT= 2 // 2 accounts per day
 
-// CAPTCHA Verification Middleware
-const verifyCaptcha = async (req, res, next) => {
-  const captchaResponse = req.body.captchaResponse;
-  if (!captchaResponse && req.headers['user-agent'] != process.env.CAPTCHA_SKIP_UA) {
-    return res.status(400).json({ error: "CAPTCHA is required" });
-  }
-  else if (!captchaResponse && req.headers['user-agent'] === process.env.CAPTCHA_SKIP_UA) {
-    return next(); // Skip CAPTCHA verification if request is from the game client
-  }
-
-  try {
-    // Log important details
-    console.log("API URL:", `https://recaptchaenterprise.googleapis.com/v1/projects/${process.env.RECAPTCHA_PROJECT_ID}/assessments?key=${process.env.RECAPTCHA_API_KEY}`);
-    console.log("captchaResponse:", captchaResponse);
-    console.log("Site Key:", "6LeEossqAAAAALX62XSAtP7dLWpcchdvx4eWXJzU");
-  
-    const apiUrl = `https://recaptchaenterprise.googleapis.com/v1/projects/${process.env.RECAPTCHA_PROJECT_ID}/assessments?key=${process.env.RECAPTCHA_API_KEY}`;
-    
-    const requestBody = {
-      event: {
-        token: captchaResponse,
-        siteKey: "6LeEossqAAAAALX62XSAtP7dLWpcchdvx4eWXJzU"
-      }
-    };
-    
-    // Send the request to Google's reCAPTCHA Enterprise API
-    const response = await axios.post(apiUrl, requestBody);
-  
-    // Log the response data
-    console.log("reCAPTCHA response:", response.data);
-   
-    if (response.data.tokenProperties.valid) {
-      return next();
-    } else {
-      return res.status(400).json({ error: "CAPTCHA verification failed" });
-    }
-  } catch (error) {
-    // Log the detailed error message
-    console.error("CAPTCHA verification error:", error.response ? error.response.data : error.message);
-    return res.status(500).json({ error: "Server error during CAPTCHA verification" });
-  }
-};  
-
+// Rate limit for account creation
 const rateLimitSignup = async (req, res, next) => {
   const ip = req.ip;
   const currentTime = Date.now();
