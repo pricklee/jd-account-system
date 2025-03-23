@@ -783,14 +783,13 @@ app.get("/v1/account/profile", async (req, res) => {
     try {
         let user;
         if (uuid) {
-            if (isValidUUID(uuid)) {
-                return res.status(400).json({ error: "Invalid UUID format." })
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (!uuidRegex.test(uuid)) {
+                return res.status(400).json({ error: "Invalid UUID Format" });
             }
-            console.log(`Fetching user profile by UUID: ${uuid}`);
-            user = await db.findUserByUUID(uuid);
+            user = await fetchUserByUUID(uuid);
         } else if (username) {
-            console.log(`Fetching user profile by Username: ${username}`);
-            user = await db.findUserByUsername(username);
+            user = await fetchUserByUsername(username);
         }
 
         if (!user) {
