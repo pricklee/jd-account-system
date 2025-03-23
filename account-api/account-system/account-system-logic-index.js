@@ -774,6 +774,7 @@ app.get("/v1/account/:id/stats", async (req, res) => {
 
 // Fetches user data for search purposes
 app.get("/v1/account/profile", async (req, res) => {
+    console.log("Profile search attempt for query params:", req.query);
     const { uuid, username } = req.query;
 
     if (!uuid && !username) {
@@ -783,12 +784,14 @@ app.get("/v1/account/profile", async (req, res) => {
     try {
         let user;
         if (uuid) {
+            console.log("Fetching user by UUID:", uuid);
             const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
             if (!uuidRegex.test(uuid)) {
                 return res.status(400).json({ error: "Invalid UUID Format" });
             }
             user = await fetchUserByUUID(uuid);
         } else if (username) {
+            console.log("Fetching user by username:", username);
             user = await fetchUserByUsername(username);
         }
 
