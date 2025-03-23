@@ -532,8 +532,7 @@ app.post("/v1/account/signup", userAgentAllowList, rateLimitSignup, async (req, 
 
 const ipCache = new NodeCache({ stdTTL: 86400 }); // Cache for 24 hours
 
-
-
+// User list
 app.get("/v1/account/users", async (req, res) => {
   try {
     const result = await pool.query(
