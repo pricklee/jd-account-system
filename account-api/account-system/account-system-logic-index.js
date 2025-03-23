@@ -423,7 +423,7 @@ app.post("/v1/account/login", userAgentAllowList, async (req, res) => {
 });
 
 // Signup
-app.post("/v1/account/signup", verifyCaptcha, userAgentAllowList, rateLimitSignup, async (req, res) => {
+app.post("/v1/account/signup", userAgentAllowList, rateLimitSignup, async (req, res) => {
 
     console.log("Signup failed: Missing required fields. Request Body:", req.body);
 
