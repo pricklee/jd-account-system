@@ -609,6 +609,52 @@ app.get("/v1/account/users", async (req, res) => {
   }
 });
 
+// Fetches user data for search purposes
+app.get("/v1/account/profile", async (req, res) => {
+  console.log("Profile search attempt for query params:", req.query);
+  const { uuid, username } = req.query;
+
+  if (!uuid && !username) {
+      return res.status(400).json({ error: "UUID or Username is required." });
+  }
+
+  try {
+      let user;
+      if (uuid) {
+          console.log("Fetching user by UUID:", uuid);
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+          if (!uuidRegex.test(uuid)) {
+              return res.status(400).json({ error: "Invalid UUID Format" });
+          }
+          user = await fetchUserByUUID(uuid);
+      } else if (username) {
+          console.log("Fetching user by username:", username);
+          user = await fetchUserByUsername(username);
+      }
+
+      if (!user) {
+          return res.status(404).json({ error: "User not found" });
+      }
+
+      res.json({
+          uuid: user.id,
+          display_name: user.nickname,
+          username: user.username,
+          role: user.role_perms,
+          staff: user.is_staff,
+          suspended: user.is_suspended,
+          country: user.country,
+          region: user.region,
+          country_code: user.country_code,
+          joined: user.joined_date,
+          score: user.totalscore,
+          pfp: user.pfp_link,
+      });
+  } catch (error) {
+      console.error("Error fetching user profile:", error);
+      res.status(500).json({ error: "Internal server error." });
+  }
+});
 
 // Suspend/Unsuspend
 app.post("/v1/account/:id/suspend", authenticate, checkPermission("canSuspendAccounts"), async (req, res) => {
@@ -772,53 +818,6 @@ app.get("/v1/account/:id/stats", async (req, res) => {
     console.error("Error fetching user stats:", error);
     res.status(500).json({ error: "Server error" });
   }
-});
-
-// Fetches user data for search purposes
-app.get("/v1/account/profile", async (req, res) => {
-    console.log("Profile search attempt for query params:", req.query);
-    const { uuid, username } = req.query;
-
-    if (!uuid && !username) {
-        return res.status(400).json({ error: "UUID or Username is required." });
-    }
-
-    try {
-        let user;
-        if (uuid) {
-            console.log("Fetching user by UUID:", uuid);
-            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-            if (!uuidRegex.test(uuid)) {
-                return res.status(400).json({ error: "Invalid UUID Format" });
-            }
-            user = await fetchUserByUUID(uuid);
-        } else if (username) {
-            console.log("Fetching user by username:", username);
-            user = await fetchUserByUsername(username);
-        }
-
-        if (!user) {
-            return res.status(404).json({ error: "User not found" });
-        }
-
-        res.json({
-            uuid: user.id,
-            display_name: user.nickname,
-            username: user.username,
-            role: user.role_perms,
-            staff: user.is_staff,
-            suspended: user.is_suspended,
-            country: user.country,
-            region: user.region,
-            country_code: user.country_code,
-            joined: user.joined_date,
-            score: user.totalscore,
-            pfp: user.pfp_link,
-        });
-    } catch (error) {
-        console.error("Error fetching user profile:", error);
-        res.status(500).json({ error: "Internal server error." });
-    }
 });
 
 // Edit user stats enpoint - uses UUID - only for the game to edit stats
