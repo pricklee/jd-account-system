@@ -467,6 +467,8 @@ app.post("/v1/account/login", userAgentAllowList, async (req, res) => {
 // Signup
 app.post("/v1/account/signup", verifyCaptcha, userAgentAllowList, rateLimitSignup, async (req, res) => {
 
+    console.log("Signup failed: Missing required fields. Request Body:", req.body);
+
   const { nickname, username, email, password } = req.body;
 
   // Check if all required fields are provided
@@ -796,7 +798,7 @@ app.get("/v1/account/profile", async (req, res) => {
         }
 
         if (!user) {
-            return res.status(400).json({ error: "User not found" });
+            return res.status(404).json({ error: "User not found" });
         }
 
         res.json({
