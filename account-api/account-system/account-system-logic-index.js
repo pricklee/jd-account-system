@@ -575,6 +575,32 @@ app.get("/v1/account/profile", async (req, res) => {
       return res.status(400).json({ error: "UUID or Username is required." });
   }
 
+const fetchUserByUUID = async (uuid) => {
+  try {
+      const result = await pool.query(
+          "SELECT id, nickname, username, role_perms, is_staff, is_suspended, country, region, country_code, joined_date, totalscore, pfp_link FROM users WHERE id = $1",
+          [uuid]
+         );
+         return result.rows[0] || null;
+      } catch (error) {
+        console.error("Error fetching user by UUID:", error)
+        throw error;
+      }
+};
+
+const fetchUserByUsername = async (username) => {
+  try {
+      const result = await pool.query(
+          "SELECT id, nickname, username, role_perms, is_staff, is_suspended, country, region, country_code, joined_date, totalscore, pfp_link FROM users WHERE username = $1",
+          [username]
+         );
+         return result.rows[0] || null;
+      } catch (error) {
+        console.error("Error fetching user by Username:", error)
+        throw error;
+      }
+};
+
   try {
       let user;
       if (uuid) {
