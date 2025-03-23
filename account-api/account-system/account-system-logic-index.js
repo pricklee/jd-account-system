@@ -297,14 +297,6 @@ const userAgentAllowList = (req, res, next) => {
 const Redis = require(`ioredis`);
 const redis = new Redis(process.env.REDIS_URL);
 
-redis.on("error", (err) => {
-  console.error("Redis error:", err);
-});
-
-redis.on("Reconnecting", () => {
-  console.log("Reconnecting to Redis...");
-})
-
 const RATE_LIMIT_WINDOW = 30 * 24 * 60 * 60; // 30 days
 const DAILY_LIMIT= 2 // 2 accounts per day
 
