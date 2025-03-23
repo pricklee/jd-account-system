@@ -607,7 +607,7 @@ const fetchUserByUsername = async (username) => {
           console.log("Fetching user by UUID:", uuid);
           const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
           if (!uuidRegex.test(uuid)) {
-              return res.status(400).json({ error: "Invalid UUID Format" });
+              return res.status(400).json({ error: "User not found" });
           }
           user = await fetchUserByUUID(uuid);
       } else if (username) {
