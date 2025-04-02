@@ -569,7 +569,7 @@ app.get("/v1/account/users", async (req, res) => {
 // Fetches user data for search purposes
 app.get("/v1/account/profile", async (req, res) => {
   console.log("Profile search attempt for query params:", req.query);
-  const { uuid, username } = req.query;
+  const { username, uuid } = req.query;
 
   if (!uuid && !username) {
       return res.status(400).json({ error: "UUID or Username is required." });
