@@ -36,7 +36,7 @@ app.set('trust proxy', true);
 app.use(cors({
   origin: function (origin, callback) {
       // Allow requests from the game client (or other trusted sources)
-      if (!origin || origin === 'https://game.jammerdash.com' || origin === 'https://jammerdash.com') {
+      if (!origin || origin === 'https://game.jammerdash.com') {
           callback(null, true);
           
       } else {
@@ -48,13 +48,21 @@ app.use(cors({
 }));
 
 
-// IP Logging Middleware
+// IP Logging
 app.use((req, res, next) => {
-  req.clientIp = (req.ip || 'unknown').replace(/^::ffff:/, '');
+  req.clientIp = (
+    req.connection?.remoteAddress ||
+    req.socket?.remoteAddress ||
+    req.ip ||
+    'unknown'
+  ).replace(/^::ffff:/, '');
 
+  // Debug logging
   console.log('IP Debug:', {
-    rawIp: req.ip,         
-    clientIp: req.clientIp
+    connectionIp: req.connection?.remoteAddress,
+    socketIp: req.socket?.remoteAddress,
+    expressIp: req.ip,
+    finalIp: req.clientIp
   });
 
   next();
@@ -271,7 +279,7 @@ const checkPermission = (requiredPermission) => {
     console.log(`User ${req.user.username} does not have permission for ${requiredPermission}`);
     return res.status(403).json({ error: "Access denied" });
   };
-}; 
+};
 
 const allowedUserAgents = process.env.ALLOWED_USER_AGENTS ? process.env.ALLOWED_USER_AGENTS.split(',') : [];
 
@@ -292,9 +300,7 @@ const redis = new Redis(process.env.REDIS_URL);
 const RATE_LIMIT_WINDOW = 30 * 24 * 60 * 60; // 30 days
 const DAILY_LIMIT= 2 // 2 accounts per day
 
-
-const whiteList = process.env.WHITELIST_IPS ? process.env.WHITELIST_IPS.split(',') : [];
-
+// Rate limit for account creation
 const rateLimitSignup = async (req, res, next) => {
   const ip = req.ip;
   const currentTime = Date.now();
@@ -419,6 +425,8 @@ app.post("/v1/account/login", userAgentAllowList, async (req, res) => {
 // Signup
 app.post("/v1/account/signup", userAgentAllowList, rateLimitSignup, async (req, res) => {
 
+    console.log("Signup failed: Missing required fields. Request Body:", req.body);
+
   const { nickname, username, email, password } = req.body;
 
   // Check if all required fields are provided
@@ -524,8 +532,7 @@ app.post("/v1/account/signup", userAgentAllowList, rateLimitSignup, async (req, 
 
 const ipCache = new NodeCache({ stdTTL: 86400 }); // Cache for 24 hours
 
-
-
+// User list
 app.get("/v1/account/users", async (req, res) => {
   try {
     const result = await pool.query(
@@ -559,6 +566,79 @@ app.get("/v1/account/users", async (req, res) => {
   }
 });
 
+// Fetches user data for search purposes
+app.get("/v1/account/profile", async (req, res) => {
+  console.log("Profile search attempt for query params:", req.query);
+  const { username, uuid } = req.query;
+
+  if (!uuid && !username) {
+      return res.status(400).json({ error: "UUID or Username is required." });
+  }
+
+const fetchUserByUUID = async (uuid) => {
+  try {
+      const result = await pool.query(
+          "SELECT id, nickname, username, role_perms, is_staff, is_suspended, country, region, country_code, joined_date, totalscore, pfp_link, rank FROM users WHERE id = $1",
+          [uuid]
+         );
+         return result.rows[0] || null;
+      } catch (error) {
+        console.error("Error fetching user by UUID:", error)
+        throw error;
+      }
+};
+
+const fetchUserByUsername = async (username) => {
+  try {
+      const result = await pool.query(
+          "SELECT id, nickname, username, role_perms, is_staff, is_suspended, country, region, country_code, joined_date, totalscore, pfp_link, rank FROM users WHERE username = $1",
+          [username]
+         );
+         return result.rows[0] || null;
+      } catch (error) {
+        console.error("Error fetching user by Username:", error)
+        throw error;
+      }
+};
+
+  try {
+      let user;
+      if (uuid) {
+          console.log("Fetching user by UUID:", uuid);
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+          if (!uuidRegex.test(uuid)) {
+              return res.status(400).json({ error: "User not found" });
+          }
+          user = await fetchUserByUUID(uuid);
+      } else if (username) {
+          console.log("Fetching user by username:", username);
+          user = await fetchUserByUsername(username);
+      }
+
+      if (!user) {
+          return res.status(404).json({ error: "User not found" });
+      }
+
+      res.json({
+          uuid: user.id,
+          display_name: user.nickname,
+          username: user.username,
+          role: user.role_perms,
+          staff: user.is_staff,
+          suspended: user.is_suspended,
+          country: user.country,
+          region: user.region,
+          country_code: user.country_code,
+          joined: user.joined_date,
+          score: user.totalscore,
+          rank : user.rank,
+          pfp: user.pfp_link,
+      });
+  } catch (error) {
+      console.error("Error fetching user profile:", error);
+      res.status(500).json({ error: "Internal server error." });
+  }
+});
 
 // Suspend/Unsuspend
 app.post("/v1/account/:id/suspend", authenticate, checkPermission("canSuspendAccounts"), async (req, res) => {
